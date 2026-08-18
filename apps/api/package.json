@@ -13,11 +13,11 @@
     "@distribuidora/utilidades": "workspace:*",
     "@supabase/supabase-js": "^2.49.0",
     "fastify": "^4.29.0",
-    "zod": "^3.24.0",
-    "dotenv": "^16.4.0"
+    "zod": "^3.24.0"
   },
   "devDependencies": {
-    "tsx": "^4.19.0",
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "dotenv": "^16.6.1",
+    "tsx": "^4.23.12"
   }
 }
