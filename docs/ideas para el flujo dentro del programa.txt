@@ -1,0 +1,280 @@
+MENÚ ADMIN WEB
+
+¿Qué debería ver el dueño cuando ingresa a la página web?
+
+Iniciar sesión con su correo y contraseña (única vez, la sesión se mantendrá abierta a no ser que se cierre explícitamente)
+
+¿Qué usuarios tendrá el sistema y qué podrán hacer?
+
+- Admin: Acceso a la totalidad del sistema, control de personal, y control de los precios y finanzas.
+- Logística: Sólo podrá acceder al stock y a la gestión de los pedidos y rutas de reparto.
+- Vendedor: Se encarga de tomar los pedidos a los clientes y mandarlos al sistema para ser preparados. Sólo tiene acceso a la app móvil, y dentro de ella ve, la lista de precios, el formulario de carga de remito/pedido, y el formulario de carga de nuevo cliente.
+- Repartidor: Se encarga de repartir los pedidos según su ruta de reparto asignada. Por ahora, no se creará la app para repartidores.
+
+¿Cómo estará dividida la app web?
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+Bienvenido de nuevo, Fabio.
+
+	- Tenés x nuevos pedidos por revisar.
+
+
+- Ventas (2 subpantallas)
+	- Resúmenes financieros (gasto total en personal, ganancia neta operaciones, costo de mantenimiento y compra de mercadería)
+		Esta será una pantalla donde se verán los costes de funcionamiento, sumado a las ganancias netas.
+		Composición:
+			- RESUMEN FINANCIERO
+			- Ganancias netas esta semana:		- Ventas esta semana:
+			- Ganacias netas este mes: 		- Ventas este mes:
+			- Ganacias netas este año:		- Ventas este año:
+			- Gráfico de torta de gastos (por categoría y por semana, mes y año)
+			- Gráfico de torta de relevancia de vendedores sobre los pedidos/ganancias de la distribuidora (mes y año)
+			- Gráfico de montaña que muestre las ganancias brutas (precioventa-costo) y netas (-comisiones) (por semana, mes y año) 
+			- Gráfico de montaña que muestre la cantidad de ventas (por semana, mes y año)
+			
+
+	- Historial de pedidos (una tabla que contendrá la totalidad de los pedidos entregados junto con sus detalles y ganancia final)
+		Filtros de contendrá la tabla: 
+			Desde x fecha, Hasta x fecha, Por Vendedor, Por Cliente, Por Repartidor, Ordenar por antigüedad (ascendende y descendente)
+		Datos que contendrá la tabla: 
+			IdPedido | IdRutaReparto| FechaYHora (pedido) | FechaYHora (entrega) | Cliente | DireccionEntrega | Vendedor | Repartidor | GananciaTotal | Botón de detalle
+		Datos que contendrá la CABECERA del detalle del pedido/remito: 
+			IdPedido, IdRutaReparto, FechaYHora (pedido), FechaYHora (entrega), Cliente, DireccionEntrega, Vendedor, Repartidor
+		Datos que contendrán los ITEMS del detalle del pedido/remito (cada entrada será para un producto específico, y dentro de esa entrada estarán los lotes que fueron involucrados en la venta de ese producto):
+	 			Ejemplo:
+		NombreProducto | Categoría
+			IdLote_1 | CostoUnitario | Cantidad |	     |       |	   	   |				| GananciaNetaPorUnidad_1 | GananciaNetaTotal_1 |
+						 	    | Markup | Renta | PrecioVenta | ComisionVendedor(10% o 0%) | 			  | 			| GananciaTotal
+			IdLote_2 | CostoUnitario | Cantidad |	     |       |             |				| GananciaNetaPorUnidad_2 | GananciaNetaTotal_2 | 
+		NombreProducto | Categoría
+			IdLote | CostoUnitario | Cantidad | Markup | Renta | PrecioVenta | ComisionVendedor(10% o 0%) | GananciaNetaPorUnidad | GananciaNetaTotal | GananciaTotal
+
+		GananciaTotalPedido
+
+- Compras (2 subpantallas)
+	- Registrar nueva compra (pantalla de carga tipo crud para cargar los datos de una factura)
+		Datos que deberá cargar de la CABECERA de la factura:
+			
+			Fecha | Proveedor | SucursalProveedor |
+			
+		Datos que deberá cargar de los ITEMS de la factura (uno por producto):
+		
+			Producto1 | Categoría | Cantidad | CostoUnitario | Subtotal(se calcula sólo)
+			Producto2 | Categoría | Cantidad | CostoUnitario | Subtotal(se calcula sólo)
+			Total(se calcula sólo) |
+			
+		Una vez finalizada la carga de los datos, se presionará "Confirmar compra". Esto:
+			1. Creará un lote en el stock, con los productos de la factura.
+			2. Aumentará el stock de los productos cargados en la base de datos.
+			3. Si los productos nunca se cargaron antes, no tendrán precio de venta definido en la lista de precios.
+			4. Al registro de compra se le asignará un IdFactura.
+	- Historial de compras (será una tabla que contendrá todos los remitos de compra cargados al sistema y sus respectivos lotes creados)
+		Datos que tendrá la tabla:
+			IdFactura | FechaCarga | NombreLoteCreado | Proveedor | SucursalProveedor  | CostoTotal | Botón de detalle de factura
+		Datos que mostrará la CABECERA del detalle de factura:
+		
+			IdFactura | FechaCarga | NombreLoteCreado | Proveedor | SucursalProveedor |
+			
+		Datos que mostrará los ITEMS del detalle de factura (para cada producto): 
+ 			
+			Producto1 | Categoría | Cantidad | CostoUnitario | Subtotal
+			Producto2 | Categoría | Cantidad | CostoUnitario | Subtotal
+			Total |
+
+
+- Lista de precios ( será una sola tabla donde podrá ver todos los productos en stock y definir el markup y el precio de venta )
+		Filtros de contendrá la tabla: 
+			Por Categoría, Ordenador por Markup (asc y desc), Buscar por coincidencia de nombre, Ordenar por Cantidad en Stock (asc y desc)
+
+		Subtabla de comisión de vendedores tendrá:
+		
+			Comisión vendedores:
+				PorcentajeComision (%) |		
+
+		Datos de la tabla:
+			IdProducto | Producto | Categoría | CantidadStock | PrecioVenta | MarkupDeseado* | RangoDeMarkup** | ComisiónVendedor*** | Renta****
+
+*MarkupDeseado será utilizado cómo recordatorio
+**RangoDeMarkup es el rango que actualmente tiene de Markup los productos que tiene en los lotes. Es decir:
+	Si tiene como precio de venta 10$ pero el costo de lote 1 y lote 2 son 5$ y 6$ respectivamente, el RangoDeMarkup sería entre 67%-100% dependiendo del lote que se venda.
+	La rentabilidad final de un pedido se podrá ver en la ventana de Ventas/Historial de Pedidos, ya que se verá que lote se uso, que generalmente será el más viejo primero siempre.
+
+***ComisiónVendedor es cuanto por producto queda al vendedor por ese producto. Se calcula en base a PorcentajeComision * PrecioVenta
+****Renta es cuanto se ganaría por ese producto luego de la comisión y contemplando el costo de compra (PrecioVenta - CostoLote - ComisiónVendedor). En caso de ser el dueño, simplemente debe mirar cuanto ganaría el solo mirando precio de venta. Funcionaría igual que con RangoDeMarkup, contemplando el costo de los lotes y entre que rango de rentabilidad funcionaría.
+
+		- PrecioVenta, MarkupDeseado y Categoría son modificables.
+		- CantidadStock viene de la base de datos.
+		- RangoDeMarkup, ComisiónVendedor y Renta serían campos que se calcularían en tiempo real.
+
+
+- Stock (2 subpantallas)
+	- Ver Stock de productos (Es una tabla. aquí podrá ver los productos que tiene en stock y que lotes componen ese stock de ese producto)
+		Filtros de contendrá la tabla: 
+			Por Categoría, Ordenar por PrecioVenta (asc y desc), Ordenar por Cantidad en Stock (asc y desc), Buscar por coincidencia de nombre
+
+		Datos de la tabla:
+			IdProducto | Producto | Categoría | CantidadStock | PrecioVenta
+				IdLoteProducto_1 | CantidadStock | FechaCompra
+				IdLoteProducto_2 | CantidadStock | FechaCompra
+
+	- Ver lotes (Es una tabla. aquí podrá ver los lotes que se fueron creando con las compras. Se puede ver tanto los que tienen cómo los que ya no tienen con filtros)
+		Filtros de contendrá la tabla: 
+			Por Proveedor, Ordenar por Fecha de carga (asc y desc), Mostrar desde x fecha a x fecha, Mostrar Lotes vacíos
+		
+		Datos de la tabla:
+			IdLote | NombreLote | IdFacturaCompra | Proveedor | FechaCreacion | Estado(Activo/Agotado)
+				IdProducto_1 | Producto | Categoría | CantidadRestante/CantidadInicial | CostoUnitario | Subtotal
+				IdProducto_2 | Producto | Categoría | CantidadRestante/CantidadInicial | CostoUnitario | Subtotal
+				CostoTotal
+
+
+- Gastos (2 subpantallas)
+	- Registrar gastos (formulario de carga que cargará gastos de distintos tipos y discriminados por categorías. estos datos se podrán ver tanto en resumen de gastos como en la futuro pantalla de rentabilidad general del negocio)
+		El formulario de carga tendrá:
+			- Concepto del gasto
+			- Categoría
+			- Observaciones (opcional)
+			- Fecha
+			- Monto
+
+	- Ver resumen de gastos (tabla con historial de gastos y un gráfico de torta)
+		Dos bloques principales: grafico de torta y abajo tabla historial con filtros
+			- Gráfico de torta: en base a las categorías y con montos, y pudiendo discriminar por mes y por año
+			- Tabla historial: tendrá los siguientes filtros:
+						Por Categoría, Ordenar por antigüedad (asc y desc), [Este mes ▼] [Este año ▼] [Personalizado ▼]
+                              													Desde: ____ Hasta: ____
+					La tabla tendrá:
+						Fecha | Concepto | Categoría | Monto | Observaciones (ver detalles, tooltip)
+		
+- Vendedores (3 subpantallas)
+	- Ver lista de vendedores (aquí podrá ver todos los vendedores activos y si quiere mostrar los que ya no están activos, es una tabla)
+		Filtros de la tabla: 
+			Mostrar inactivos (por ahora no hace falta filtrar demasiado)
+		La tabla tendrá:
+			CodVendedor | NombreApellido | FechaIngreso | FechaEgreso | TotalVentasRealizadas | Estado(activo/inactivo) + Ver más detalles
+		El detalle contendrá:
+			CodVendedor, Nombre y Apellido, DNI, Número, Fecha de ingreso, fecha de egreso si la hubiera
+			Ganancias [Este mes ▼]:
+			Ganancias [Este año ▼]:
+			Ganancias históricas:
+			(Suma de comisiones generadas en pedidos en los períodos mencionados)
+			
+			Subtabla de ventas del vendedor contendrá:
+				Filtros: Por Cliente, Desde x fecha a x fecha, 
+				IdPedido, Cliente, Fecha, ComisionTotalGanada
+	- Cargar nuevo vendedor (aquí se añadirán nuevos vendedores)
+		El formulario contendrá:
+			- Nombre y apellido
+			- DNI
+			- Teléfono
+			Al final del registro, se le asignará un código único de vendedor.
+	- Modificar datos de vendedor (se muestra el mismo formulario de arriba, en caso de error de carga, y pudiendo modificar el código de vendedor)
+	
+- Clientes (3 subpantallas)	
+	- Ver lista de clientes (una tabla donde se podrá ver la lista de clientes que tiene la distribuidora)
+		Filtros: Ordenar por Cantidad de pedidos (asc y desc), Por Antigüedad (asc y desc), Buscar por nombre/razón social
+		Datos de la tabla:
+			CodCliente | Nombre/RazónSocial | Dirección | Teléfono | CantPedidos | + Ver más detalles
+		Subtabla detalle cliente:
+			CodCliente | Nombre/RazónSocial | Dirección | Teléfono
+			
+			IdPedido | Fecha | Dirección | Vendedor | MontoPagadoPorCliente
+	- Cargar nuevo cliente (formulario de carga)
+		Tendrá:
+			-Nombre/Razón Social
+			-Dirección
+			-Teléfono
+	- Modificar datos de cliente (mismo formulario)
+		
+- Logística ()
+	- Lista de pedidos (aquí se podrá ver una tabla con todos los pedidos pendientes a preparar y entregar, los entregados son accesibles por un filtro)
+		Filtros: 
+				Por Cliente, Por Vendedor, Por Estado (Pendiente a preparar/Pendiente a entregar/Entregado/Cancelado), Buscar coincidencia de cliente
+		Datos que tendrá la tabla:
+				IdPedido | Cliente | Dirección | FechaEmision | Vendedor | Estado | + Ver más detalles
+		Datos del detalle de pedido:
+				Botón de imprimir remito |
+				IdPedido | Cliente | Dirección | FechaEmision | Vendedor | Estado 
+		Datos de los ítems:
+				Producto1 | Cantidad | PrecioVentaUnitario | Subtotal
+				Producto2 | Cantidad | PrecioVentaUnitario | Subtotal
+		TotalPedido | 
+	- Cargar ruta de reparto (en esta pantalla se asignaran pedidos a rutas de repartos, es un formulario de carga)
+		Estructura del formulario:
+			----------------------------------
+			+ Asignar conductor ▼	+ Asignar vehículo ▼
+			
+			+ Sumar pedido listo para entregar ▼
+			(Cómo se verán los pedidos en la lista:)
+			Orden | FechaEmisión | Vendedor | Nombre/RazónSocialCliente | Dirección | Teléfono | Importe total de pedido
+			
+							TotalImportePedidos:
+			Cargar nueva ruta
+			-------------------------------------------
+	
+	- Ver rutas de reparto actuales (aquí se podrán ver las rutas de reparto funcionando actualmente, ósea que aún no finalizaron)
+		Datos de la tabla:
+		IdRutaReparto | Conductor | Vehículo | CantPedidos | Fecha
+			IdPedido_1 | Cliente | Dirección | FechaEmision | Vendedor | Estado (entregado/pendiente)	
+			IdPedido_2 | Cliente | Dirección | FechaEmision | Vendedor | Estado (entregado/pendiente)	
+	- Lista de vehículos ()
+		+ Añadir vehículo nuevo
+		PatenteVehiculo | Nombre | Tipo(Auto/Camioneta/Camión) | Estado (En reparto/Estacionado/Inactivo) | Modificar datos
+	- Lista de chóferes ()
+		+ Añadir chófer nuevo
+		CodChofer | NombreApellido | Dni | Teléfono | Estado(En reparto/Disponible/Inactivo) | Modificar datos
+		
+	- Historial de rutas de reparto
+		Filtros:
+			Por Conductor, Por Vehiculo, Ordenar por Antigüedad, Desde x fecha a x fecha
+		Datos de la tabla:
+			IdRutaReparto | Conductor | Vehiculo | CantPedidos | Fecha
+				IdPedido_1 | Cliente | Dirección | FechaEmision | Vendedor | Estado (entregado/pendiente)	
+				IdPedido_2 | Cliente | Dirección | FechaEmision | Vendedor | Estado (entregado/pendiente)	
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+- Logística 
+   > Lista de pedidos (A preparar, Preparado, Entregado, Cancelado)
+   > Cargar ruta de reparto (se imprime luego un pdf o algo para el conductor) (conductor avisa que un pedido pasa a ser “Entregado”, sino, cuando termina el reparto, se cambia el estado manualmente)
+   > Ver rutas de reparto actuales
+   > Lista de vehículos
+   > Lista de chóferes
+   > Historial de rutas de reparto
+
+- Ventas
+   > Registrar pedido (nota de pedido) (genera "Pedido" con Estado “Pendiente a preparar”. Este es recibido en Logística)
+   > Historial de pedidos
+   > Resumen de rentabilidad (datos estadísticos generales)
+
+- Compras
+   > Registrar compras (factura→Lote)
+   > Historial de compras
+
+- Lista de precios
+- Stock
+   > Ver stock (productos)
+   > Ver lotes (compras)
+
+- Vendedores
+   > Ver lista de vendedores
+   > Cargar nuevo vendedor
+   > Modificar datos de vendedor
+
+- Clientes
+   > Ver lista de clientes
+	> Detalle de cliente
+   > Cargar nuevo cliente
+   > Modificar datos de cliente
+
+
+
+
+MENÚ VENDEDOR MÓVIL
+
+
+MENÚ REPARTIDOR MÓVIL
+
+
+

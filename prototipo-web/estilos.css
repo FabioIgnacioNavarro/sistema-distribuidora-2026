@@ -1,0 +1,31 @@
+/* Estilos compartidos del prototipo estático. La interfaz se apoya en Tailwind vía CDN. */
+:root { color-scheme: light; }
+body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.fondo-app { background: #f4f7fb; }
+.barra-lateral { width: 270px; }
+.contenido-principal { margin-left: 270px; }
+.fila-padre { background: #fff; font-weight: 700; border-bottom: 3px solid #cbd5e1; }
+.fila-hija { background: #f8fafc; font-weight: 400; }
+.fila-hija td:first-child { padding-left: 2rem; }
+.fila-total { background: #f1f5f9; font-weight: 700; }
+.fila-total td:first-child { padding-left: 2rem; }
+.tabla-prototipo th { white-space: nowrap; }
+.tabla-prototipo td, .tabla-prototipo th { padding: .8rem 1rem; vertical-align: middle; }
+.tabla-prototipo tbody tr { border-bottom: 1px solid #e2e8f0; }
+.tarjeta-kpi { min-height: 142px; }
+.placeholder-grafico { min-height: 245px; border-radius: 1rem; border: 1px dashed #cbd5e1; background: linear-gradient(135deg, #f8fafc, #eef2ff); }
+.placeholder-torta { width: 150px; height: 150px; border-radius: 999px; background: conic-gradient(#4f46e5 0 38%, #14b8a6 38% 67%, #f59e0b 67% 84%, #f43f5e 84% 100%); box-shadow: inset 0 0 0 28px #f8fafc; }
+.placeholder-montana { height: 150px; background: linear-gradient(155deg, transparent 49%, #818cf8 50%, #818cf8 51%, transparent 52%), linear-gradient(25deg, transparent 49%, #14b8a6 50%, #14b8a6 51%, transparent 52%), linear-gradient(90deg, transparent 9%, #e2e8f0 10%, transparent 11%, transparent 29%, #e2e8f0 30%, transparent 31%, transparent 49%, #e2e8f0 50%, transparent 51%, transparent 69%, #e2e8f0 70%, transparent 71%, transparent 89%, #e2e8f0 90%, transparent 91%); position: relative; }
+.placeholder-montana::after { content: ""; position: absolute; inset: 32% 0 0; background: linear-gradient(155deg, transparent 49%, #818cf8 50%, #818cf8 51%, transparent 52%); opacity: .75; }
+.nav-seccion { letter-spacing: .08em; font-size: .68rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+.enlace-nav.activo { background: #eef2ff; color: #4338ca; font-weight: 700; }
+.campo { width: 100%; border: 1px solid #cbd5e1; border-radius: .65rem; padding: .65rem .8rem; background: #fff; color: #334155; }
+.campo:focus { outline: 2px solid #c7d2fe; border-color: #6366f1; }
+.boton-primario { display: inline-flex; align-items: center; justify-content: center; border-radius: .65rem; background: #4f46e5; color: #fff; padding: .7rem 1rem; font-weight: 700; }
+.boton-secundario { display: inline-flex; align-items: center; justify-content: center; border-radius: .65rem; border: 1px solid #cbd5e1; background: #fff; color: #334155; padding: .65rem 1rem; font-weight: 600; }
+.badge { display: inline-flex; align-items: center; border-radius: 999px; padding: .25rem .65rem; font-size: .75rem; font-weight: 700; }
+.badge-verde { background: #dcfce7; color: #166534; }
+.badge-amarillo { background: #fef3c7; color: #92400e; }
+.badge-rojo { background: #fee2e2; color: #991b1b; }
+.badge-gris { background: #e2e8f0; color: #475569; }
+@media (max-width: 1023px) { .barra-lateral { width: 220px; } .contenido-principal { margin-left: 220px; } }
