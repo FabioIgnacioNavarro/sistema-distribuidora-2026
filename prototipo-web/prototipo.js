@@ -84,14 +84,14 @@
   }
 
   function prepararFilasDesplegables() {
-    const rutas = /stock-productos|stock-lotes|logistica-rutas-activas|logistica-historial-rutas/;
+    const rutas = /stock-productos|stock-lotes|logistica-rutas-activas|logistica-historial-rutas|ventas-historial/;
     if (!rutas.test(location.pathname)) return;
 
     document.querySelectorAll('tr.fila-padre').forEach((fila) => {
       const filasHijas = [];
       let siguiente = fila.nextElementSibling;
       while (siguiente && !siguiente.classList.contains('fila-padre')) {
-        if (siguiente.classList.contains('fila-hija') || siguiente.classList.contains('fila-total')) {
+        if (siguiente.classList.contains('fila-hija')) {
           filasHijas.push(siguiente);
         }
         siguiente = siguiente.nextElementSibling;
@@ -100,7 +100,9 @@
 
       fila.classList.add('fila-desplegable');
       fila.tabIndex = 0;
-      fila.setAttribute('aria-expanded', 'false');
+      const iniciarAbierto = /ventas-historial/.test(location.pathname);
+      fila.setAttribute('aria-expanded', String(iniciarAbierto));
+      fila.classList.toggle('fila-abierta', iniciarAbierto);
       const primeraCelda = fila.querySelector('td');
       if (primeraCelda) {
         const indicador = document.createElement('span');
@@ -125,7 +127,35 @@
           alternar();
         }
       });
-      filasHijas.forEach((filaHija) => filaHija.classList.add('fila-oculta'));
+      filasHijas.forEach((filaHija) => filaHija.classList.toggle('fila-oculta', !iniciarAbierto));
+    });
+  }
+
+  function prepararLotesDelDetalle() {
+    if (!/ventas-historial/.test(location.pathname)) return;
+    document.querySelectorAll('#detalle-pedido tr.fila-hija').forEach((fila) => {
+      fila.classList.add('fila-lote-desplegable');
+      fila.tabIndex = 0;
+      fila.setAttribute('aria-expanded', 'true');
+      const primeraCelda = fila.querySelector('td');
+      if (primeraCelda) {
+        const indicador = document.createElement('span');
+        indicador.className = 'indicador-lote';
+        indicador.setAttribute('aria-hidden', 'true');
+        primeraCelda.prepend(indicador);
+      }
+      const alternar = () => {
+        const abierto = fila.getAttribute('aria-expanded') === 'true';
+        fila.setAttribute('aria-expanded', String(!abierto));
+        fila.classList.toggle('lote-cerrado', abierto);
+      };
+      fila.addEventListener('click', alternar);
+      fila.addEventListener('keydown', (evento) => {
+        if (evento.key === 'Enter' || evento.key === ' ') {
+          evento.preventDefault();
+          alternar();
+        }
+      });
     });
   }
 
@@ -149,9 +179,59 @@
     });
   }
 
+  function prepararSelectorDeColumnas() {
+    const tabla = document.querySelector('[data-tabla-columnas="historial-pedidos"]');
+    const selector = document.querySelector('[data-selector-columnas]');
+    const boton = selector?.querySelector('[data-alternar-columnas]');
+    const panel = selector?.querySelector('[data-panel-columnas]');
+    if (!tabla || !selector || !boton || !panel) return;
+
+    const clave = 'distribuidora-columnas-historial';
+    let estado = {};
+    try {
+      estado = JSON.parse(localStorage.getItem(clave) || '{}');
+    } catch {
+      estado = {};
+    }
+
+    const encabezados = Array.from(tabla.tHead.rows[0].cells);
+    encabezados.forEach((encabezado, indice) => {
+      const nombre = encabezado.textContent.trim();
+      if (indice === 0 || !nombre) return;
+      const etiqueta = document.createElement('label');
+      etiqueta.className = 'opcion-columna';
+      const entrada = document.createElement('input');
+      entrada.type = 'checkbox';
+      entrada.checked = estado[nombre] !== false;
+      entrada.dataset.indiceColumna = String(indice);
+      etiqueta.append(entrada, document.createTextNode(` ${nombre}`));
+      panel.append(etiqueta);
+
+      const aplicar = () => {
+        const visible = entrada.checked;
+        tabla.querySelectorAll('tr').forEach((fila) => {
+          const celda = fila.cells[indice];
+          if (celda) celda.style.display = visible ? '' : 'none';
+        });
+        estado[nombre] = visible;
+        localStorage.setItem(clave, JSON.stringify(estado));
+      };
+      entrada.addEventListener('change', aplicar);
+      aplicar();
+    });
+
+    boton.addEventListener('click', () => {
+      const abierto = !panel.hidden;
+      panel.hidden = abierto;
+      boton.setAttribute('aria-expanded', String(!abierto));
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     prepararBarra();
     prepararFilasDesplegables();
+    prepararLotesDelDetalle();
+    prepararSelectorDeColumnas();
     prepararTema();
   });
 })();

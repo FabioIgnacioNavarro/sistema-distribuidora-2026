@@ -30,6 +30,22 @@ body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSyst
 .indicador-desplegable::before { content: '▶'; font-size: .65rem; transition: transform .15s ease; display: inline-block; }
 .fila-abierta .indicador-desplegable::before { transform: rotate(90deg); }
 .fila-oculta { display: none; }
+.fila-lote-desplegable { cursor: pointer; }
+.fila-lote-desplegable:focus { outline: 2px solid #a5b4fc; outline-offset: -2px; }
+.fila-lote-desplegable.lote-cerrado td:not(:first-child) { display: none; }
+.indicador-lote { display: inline-block; width: 1rem; color: #818cf8; font-size: .65rem; }
+.indicador-lote::before { content: '＋'; }
+.fila-lote-desplegable:not(.lote-cerrado) .indicador-lote::before { content: '−'; }
+.barra-progreso-lote { width: min(180px, 100%); height: .55rem; margin-bottom: .4rem; overflow: hidden; border-radius: 999px; background: #e2e8f0; }
+.barra-progreso-lote-relleno { display: block; height: 100%; border-radius: 999px; transition: width .2s ease; }
+.barra-progreso-verde { background: #22c55e; }
+.barra-progreso-ambar { background: #f59e0b; }
+.barra-progreso-rojo { background: #ef4444; }
+.texto-progreso-lote { display: block; white-space: nowrap; }
+.selector-columnas { position: relative; align-self: end; }
+.panel-columnas { position: absolute; z-index: 20; top: calc(100% + .5rem); right: 0; min-width: 200px; padding: .75rem; border: 1px solid #cbd5e1; border-radius: .75rem; background: #fff; box-shadow: 0 12px 24px rgba(15, 23, 42, .12); }
+.opcion-columna { display: block; padding: .35rem .25rem; font-size: .8rem; font-weight: 600; cursor: pointer; }
+.opcion-columna input { accent-color: #4f46e5; }
 .enlace-nav.activo { background: #eef2ff; color: #4338ca; font-weight: 700; }
 .campo { width: 100%; border: 1px solid #cbd5e1; border-radius: .65rem; padding: .65rem .8rem; background: #fff; color: #334155; }
 .campo:focus { outline: 2px solid #c7d2fe; border-color: #6366f1; }
@@ -75,4 +91,6 @@ html[data-tema="oscuro"] {
   .badge-amarillo { background: #713f12 !important; color: #fef3c7 !important; }
   .badge-rojo { background: #7f1d1d !important; color: #fecaca !important; }
   .badge-gris { background: #334155 !important; color: #e2e8f0 !important; }
+  .barra-progreso-lote { background: #334155; }
+  .panel-columnas { border-color: #475569; background: #1e293b; box-shadow: 0 12px 24px rgba(0, 0, 0, .35); }
 }
