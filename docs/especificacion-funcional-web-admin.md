@@ -118,7 +118,7 @@ Una sola tabla donde se ven todos los productos en stock y se definen markup y p
 ### Subtabla de Comisión de Vendedores
 | Campo | Valor |
 | :--- | :--- |
-| PorcentajeComisión (%) | [Editable] |
+| PorcentajeComisión (%) | 10% inicial, editable por el Administrador |
 
 ### Datos de la Tabla
 | Columna | Editable | Notas |
@@ -136,7 +136,7 @@ Una sola tabla donde se ven todos los productos en stock y se definen markup y p
 #### Definiciones
 - ***MarkupDeseado:** Utilizado como recordatorio.
 - ****RangoDeMarkup:** Rango actual de markup basado en los lotes activos. Ejemplo: si PrecioVenta = $10 y los costos de lote 1 y lote 2 son $5 y $6 respectivamente, el RangoDeMarkup sería entre 67%-100% dependiendo del lote que se venda. La rentabilidad final de un pedido se ve en Ventas → Historial de Pedidos, donde se identifica qué lote se usó (generalmente el más viejo primero, FIFO).
-- *****ComisiónVendedor:** Monto por producto que queda al vendedor. Se calcula como `PorcentajeComisión × PrecioVenta`.
+- *****ComisiónVendedor:** Monto por producto que queda al vendedor. Se calcula como `PorcentajeComisión × PrecioVenta`; el porcentaje es configurable y comienza en 10%.
 - ******Renta:** Ganancia por producto después de comisión y costo de compra: `PrecioVenta − CostoLote − ComisiónVendedor`. En caso de ser el dueño, simplemente mira cuánto ganaría observando el precio de venta. Funciona igual que RangoDeMarkup: contempla el costo de los lotes y muestra entre qué rango de rentabilidad operaría.
 
 ---

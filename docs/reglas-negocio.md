@@ -16,9 +16,9 @@
 
 ## Ventas y Rentabilidad
 
-**Cálculo de rentabilidad:** El cálculo se realiza en base al Excel proveído por el dueño. Fórmulas: Renta = Precio Venta − Costo Promedio Ponderado; Comisión = 10% × Precio Venta (solo ventas de vendedores); YO (Ganancia Neta) = Renta − Comisión.
+**Cálculo de rentabilidad:** El cálculo se realiza en base al Excel proveído por el dueño. Fórmulas: Renta = Precio Venta − Costo Promedio Ponderado; Comisión = Porcentaje de comisión vigente × Precio Venta (solo ventas de vendedores); YO (Ganancia Neta) = Renta − Comisión. El porcentaje de comisión es configurable por el Administrador y comienza en 10%.
 
-**Lista de precios:** Constará de una lista de productos disponibles en stock con: nombre del producto, categoría, cant. en stock, precio de venta, markup, renta unitaria, comisión (10%), ganancia neta (renta-comisión). El precio de venta y el markup son editables manualmente por el Administrador.
+**Lista de precios:** Constará de una lista de productos disponibles en stock con: nombre del producto, categoría, cant. en stock, precio de venta, markup, renta unitaria, comisión (10% por defecto), ganancia neta (renta-comisión). El precio de venta, el markup y el porcentaje de comisión son editables manualmente por el Administrador.
 
 **Precios al momento de venta vs precios actuales:** El precio de venta se congela (snapshot) al momento de crear cada línea de pedido. Cambios posteriores en la lista de precios NO afectan pedidos ya existentes, ni siquiera si están en estado "Pendiente de preparar".
 
@@ -26,7 +26,7 @@
 
 **Resumen de rentabilidad:** La aplicación del administrador tendrá una sección dentro del módulo Ventas que englobe datos globales: cuánto ganó con sus operaciones en los últimos días, semanas y meses. Incluye ventas totales, ganancia neta total, comisiones pagadas, productos más/menos rentables.
 
-**Comisiones:** Los vendedores ganan un 10% de las ventas realizadas por ellos mismos. La comisión se calcula sobre el precio de venta congelado al momento del pedido.
+**Comisiones:** Los vendedores ganan el porcentaje de comisión vigente de las ventas realizadas por ellos mismos. El valor inicial es 10% y puede ser modificado por el Administrador. La comisión se calcula sobre el precio de venta congelado al momento del pedido.
 
 ## Pedidos y Estados
 

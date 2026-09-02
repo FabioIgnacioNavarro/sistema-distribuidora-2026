@@ -234,44 +234,65 @@ Bienvenido de nuevo, Fabio.
 				IdPedido_1 | Cliente | Dirección | FechaEmision | Vendedor | Estado (entregado/pendiente)	
 				IdPedido_2 | Cliente | Dirección | FechaEmision | Vendedor | Estado (entregado/pendiente)	
 ---------------------------------------------------------------------------------------------------------------------------------------------------------
-
-- Logística 
-   > Lista de pedidos (A preparar, Preparado, Entregado, Cancelado)
-   > Cargar ruta de reparto (se imprime luego un pdf o algo para el conductor) (conductor avisa que un pedido pasa a ser “Entregado”, sino, cuando termina el reparto, se cambia el estado manualmente)
-   > Ver rutas de reparto actuales
-   > Lista de vehículos
-   > Lista de chóferes
-   > Historial de rutas de reparto
-
-- Ventas
-   > Registrar pedido (nota de pedido) (genera "Pedido" con Estado “Pendiente a preparar”. Este es recibido en Logística)
-   > Historial de pedidos
-   > Resumen de rentabilidad (datos estadísticos generales)
-
-- Compras
-   > Registrar compras (factura→Lote)
-   > Historial de compras
-
-- Lista de precios
-- Stock
-   > Ver stock (productos)
-   > Ver lotes (compras)
-
-- Vendedores
-   > Ver lista de vendedores
-   > Cargar nuevo vendedor
-   > Modificar datos de vendedor
-
-- Clientes
-   > Ver lista de clientes
-	> Detalle de cliente
-   > Cargar nuevo cliente
-   > Modificar datos de cliente
-
-
-
-
 MENÚ VENDEDOR MÓVIL
+
+---------------------------------------------------------------
+Hola, Rodrigo. ¿Qué querés hacer?
+
+> Cargar nuevo pedido (será un formulario de carga de pedido con formato tipo remito)
+	Que contendrá:
+		Cliente ▼(si está cargado en la base de datos, aparecerá, sino, está la opción de "Nuevo cliente"), Dirección, Teléfono, Fecha, Nro. Remito (generado automáticamente)
+		Si "Nuevo cliente" es seleccionado en la lista:
+		Nombre del nuevo cliente:
+	Subsección productos:
+		+ Añadir producto (apretar el botón enviará al vendedor a una subpantalla donde estarán los productos con la lista de precios)
+												Buscar por nombre
+												Producto1 | Categoría | PrecioUnitario  | Elegir	
+												Producto2 | Categoría | PrecioUnitario | Elegir
+												Producto3 | Categoría | PrecioUnitario | Elegir
+		Una vez elegido uno o varios productos se verá así:
+		Producto1 | Cant. (modificable) | PrecioUnitario (modificable, pero vendrá el de la lista) | Subtotal
+		Producto2 | Cant. (modificable) | PrecioUnitario (modificable, pero vendrá el de la lista) | Subtotal
+
+													| Total
+		
+		| Confirmar pedido | 
+
+		Subpantalla de confirmación (¿estás seguro que está todo en orden? mostrando lo que se cargo solo lectura y con un botón de volver atrás):
+		Subpantalla de pedido enviado(botón "Volver al menú principal")
+		
+> Ver lista de precios (aqui tanto el vendedor como el cliente podrán ver la lista de productos con sus respectivos precios, sin cosas a tocar salvo filtros)
+
+		Filtrar por categoría, Buscar por nombre
+		Producto1 | Categoría | PrecioUnitario 
+		Producto2 | Categoría | PrecioUnitario
+		Producto3 | Categoría | PrecioUnitario
+
+> Ver lista de pedidos realizados (Aquí el vendedor podrá ver cuantos pedidos hizo en el dia, semana y mes)
+
+		Pedidos realizados este día:
+		Pedidos realizados esta semana:
+		Pedidos realizados este mes:
+		
+		IdPedido | Cliente | Direccion | Teléfono | Fecha | Nro. Remito | GananciaTotal | + Ver detalles
+		Detalles:
+		IdPedido | Cliente | Direccion | Teléfono | Fecha | Nro. Remito
+			Producto1 | Cant. | PrecioUnitario | Subtotal | ComisionGanadaUnitaria | ComisionGanadaSubtotal
+			Producto2 | Cant. | PrecioUnitario | Subtotal | ComisionGanadaUnitaria | ComisionGanadaSubtotal
+												| GananciaTotal
+										
+		
+
+
+
+
+
+---------------------------------------------------------------
+
+
+
+
+
 
 
 MENÚ REPARTIDOR MÓVIL

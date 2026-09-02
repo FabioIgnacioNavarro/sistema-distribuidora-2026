@@ -1,5 +1,5 @@
 /* Estilos compartidos del prototipo estático. La interfaz se apoya en Tailwind vía CDN. */
-:root { color-scheme: light; }
+:root { color-scheme: light dark; }
 body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 .fondo-app { background: #f4f7fb; }
 .barra-lateral { width: 270px; }
@@ -18,6 +18,18 @@ body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSyst
 .placeholder-montana { height: 150px; background: linear-gradient(155deg, transparent 49%, #818cf8 50%, #818cf8 51%, transparent 52%), linear-gradient(25deg, transparent 49%, #14b8a6 50%, #14b8a6 51%, transparent 52%), linear-gradient(90deg, transparent 9%, #e2e8f0 10%, transparent 11%, transparent 29%, #e2e8f0 30%, transparent 31%, transparent 49%, #e2e8f0 50%, transparent 51%, transparent 69%, #e2e8f0 70%, transparent 71%, transparent 89%, #e2e8f0 90%, transparent 91%); position: relative; }
 .placeholder-montana::after { content: ""; position: absolute; inset: 32% 0 0; background: linear-gradient(155deg, transparent 49%, #818cf8 50%, #818cf8 51%, transparent 52%); opacity: .75; }
 .nav-seccion { letter-spacing: .08em; font-size: .68rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+.grupo-nav { margin-bottom: 1rem; }
+.grupo-nav summary { cursor: pointer; list-style: none; padding: .35rem .25rem; user-select: none; }
+.grupo-nav summary::-webkit-details-marker { display: none; }
+.grupo-nav summary::before { content: '＋'; display: inline-block; width: 1.15rem; color: #94a3b8; font-size: .8rem; transition: transform .15s ease; }
+.grupo-nav[open] summary::before { content: '−'; }
+.grupo-nav > .space-y-1, .grupo-nav > .enlace-nav { margin-top: .25rem; }
+.fila-desplegable { cursor: pointer; }
+.fila-desplegable:focus { outline: 2px solid #818cf8; outline-offset: -2px; }
+.indicador-desplegable { display: inline-block; width: 1.15rem; color: #6366f1; font-weight: 900; }
+.indicador-desplegable::before { content: '▶'; font-size: .65rem; transition: transform .15s ease; display: inline-block; }
+.fila-abierta .indicador-desplegable::before { transform: rotate(90deg); }
+.fila-oculta { display: none; }
 .enlace-nav.activo { background: #eef2ff; color: #4338ca; font-weight: 700; }
 .campo { width: 100%; border: 1px solid #cbd5e1; border-radius: .65rem; padding: .65rem .8rem; background: #fff; color: #334155; }
 .campo:focus { outline: 2px solid #c7d2fe; border-color: #6366f1; }
@@ -29,3 +41,38 @@ body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSyst
 .badge-rojo { background: #fee2e2; color: #991b1b; }
 .badge-gris { background: #e2e8f0; color: #475569; }
 @media (max-width: 1023px) { .barra-lateral { width: 220px; } .contenido-principal { margin-left: 220px; } }
+
+html[data-tema="claro"] { color-scheme: light; }
+html[data-tema="oscuro"] { color-scheme: dark; }
+
+/* Modo oscuro elegido desde el panel de inicio. */
+html[data-tema="oscuro"] {
+  body { background: #0f172a !important; color: #cbd5e1 !important; }
+  .fondo-app { background: #0f172a !important; }
+  .barra-lateral, header, .bg-white, .fila-padre { background: #111827 !important; }
+  .border-slate-200, .border-slate-100, .border-indigo-100, .border-teal-100, .border-amber-100 { border-color: #334155 !important; }
+  .text-slate-900, .text-slate-800 { color: #f8fafc !important; }
+  .text-slate-700, .text-slate-600 { color: #cbd5e1 !important; }
+  .text-slate-500, .text-slate-400 { color: #94a3b8 !important; }
+  .text-indigo-950, .text-teal-950, .text-amber-950 { color: #f8fafc !important; }
+  .bg-slate-50, .fila-hija { background: #1e293b !important; }
+  .bg-slate-100, .fila-total { background: #273449 !important; }
+  .bg-indigo-50 { background: #1e1b4b !important; }
+  .bg-teal-50 { background: #042f2e !important; }
+  .bg-amber-50 { background: #451a03 !important; }
+  .text-indigo-700, .text-indigo-800 { color: #c7d2fe !important; }
+  .text-teal-700 { color: #99f6e4 !important; }
+  .text-amber-700 { color: #fde68a !important; }
+  .enlace-nav { color: #cbd5e1; }
+  .enlace-nav.activo { background: #312e81 !important; color: #e0e7ff !important; }
+  .campo { background: #1e293b !important; border-color: #475569 !important; color: #f8fafc !important; }
+  .campo::placeholder { color: #94a3b8; }
+  .boton-secundario { background: #1e293b !important; border-color: #475569 !important; color: #e2e8f0 !important; }
+  .placeholder-grafico { border-color: #475569; background: linear-gradient(135deg, #1e293b, #1e1b4b); }
+  .placeholder-torta { box-shadow: inset 0 0 0 28px #1e293b; }
+  .tabla-prototipo tbody tr { border-color: #334155; }
+  .badge-verde { background: #14532d !important; color: #bbf7d0 !important; }
+  .badge-amarillo { background: #713f12 !important; color: #fef3c7 !important; }
+  .badge-rojo { background: #7f1d1d !important; color: #fecaca !important; }
+  .badge-gris { background: #334155 !important; color: #e2e8f0 !important; }
+}

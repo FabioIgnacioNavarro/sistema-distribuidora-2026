@@ -17,7 +17,7 @@ Sistema de gestión para distribuidora de consumo masivo. Monorepo TypeScript co
 6. Reglas de negocio: LEER docs/reglas-negocio.md ANTES de escribir cualquier lógica de dominio. No asumir comportamientos.
 7. Stock negativo: BLOQUEADO. Validar antes de confirmar pedido.
 8. FIFO: Obligatorio para descuento de lotes. Sin configuración ni alternativas.
-9. Comisión: 10% del precio de venta, solo si vendido_por_dueno = false.
+9. Comisión: Porcentaje configurable por el Administrador, con 10% como valor inicial; se aplica sobre el precio de venta solo si vendido_por_dueno = false.
 10. Snapshot: Precio de venta se congela en items_pedido al crear la línea. Cambios posteriores no afectan pedidos existentes.
 
 ## ESTRUCTURA DEL MONOREPO

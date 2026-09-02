@@ -11,10 +11,15 @@
 - Decisión: Descuento siempre por lote más antiguo (recibido_en ASC). Sin selector en UI. Lógica hardcodeada en servicio FIFO.
 - Consecuencias: Menos complejidad. No hay campo estrategia_descuento en productos.
 
-## ADR-003: Comisión 10% con excepción para ventas del dueño
+## ADR-003: Comisión configurable con valor inicial del 10%
 - Fecha: Agosto 2026 | Estado: Aceptado
-- Decisión: Campo booleano vendido_por_dueno en pedidos. Comisión = 0 si es venta del dueño. Cálculo vía trigger en BD.
-- Consecuencias: Cambio de porcentaje requiere migración de trigger, pero es simple para V1.
+- Decisión: El porcentaje de comisión se almacena como configuración editable por el Administrador y comienza en 10%. El campo booleano vendido_por_dueno determina la excepción: la comisión es 0 si es una venta del dueño. La comisión se calcula sobre el precio de venta congelado en el pedido.
+- Consecuencias: El porcentaje puede cambiarse sin modificar el código. Debe registrarse en auditoría cada modificación de configuración y conservarse el valor aplicado a cada pedido para que los históricos no cambien.
+
+## ADR-009: Admin web con React + Vite
+- Fecha: Agosto 2026 | Estado: Aceptado
+- Decisión: La aplicación web de administración utilizará React + Vite + Tailwind. El backend continúa separado como Fastify + Supabase.
+- Consecuencias: No se utilizará Next.js en el admin; el routing y el consumo de la API se resuelven en la aplicación cliente.
 
 ## ADR-004: Stock descontado al pasar a Preparado, no al crear pedido
 - Fecha: Agosto 2026 | Estado: Aceptado
