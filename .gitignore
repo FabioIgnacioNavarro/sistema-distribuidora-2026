@@ -47,3 +47,4 @@ yarn-error.log*
 # Ignorar la carpeta .pnpm-store para evitar subir dependencias de paquetes a Git.
 # Esto es útil para mantener el repositorio limpio y evitar conflictos de versiones de paquetes entre diferentes entornos de desarrollo.
 .pnpm-store/
+.expo/
