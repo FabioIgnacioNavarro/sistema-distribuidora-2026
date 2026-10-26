@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fontana | Vendedor</title>
+  <link rel="stylesheet" href="estilos.css" />
+</head>
+<body>
+  <main class="telefono">
+    <header class="encabezado">
+      <div><span class="marca">FONTANA</span><span class="submarca">Vendedor</span></div>
+      <button class="icono" data-accion="notificaciones" aria-label="Notificaciones">♢</button>
+    </header>
+
+    <section id="vista-inicio" class="vista activa">
+      <p class="saludo">Buen día, Martín</p>
+      <h1>¿Qué hacemos hoy?</h1>
+      <button class="accion-principal" data-vista="pedido">+ Nuevo pedido</button>
+      <div class="tarjetas-resumen"><div><strong>12</strong><span>Pedidos del mes</span></div><div><strong>$184.600</strong><span>Vendido este mes</span></div></div>
+      <h2>Últimos pedidos</h2>
+      <div id="resumen-pedidos" class="lista"></div>
+    </section>
+
+    <section id="vista-pedido" class="vista">
+      <button class="volver" data-vista="inicio">‹ Inicio</button>
+      <h1>Nuevo pedido</h1>
+      <label>Cliente<select id="cliente"><option>Tickets bajos</option><option>Avicola 912</option><option>Kiosco Gema (Tati)</option></select></label>
+      <div class="fila-titulo"><h2>Productos</h2><span id="contador">0 productos</span></div>
+      <div id="catalogo" class="catalogo"></div>
+      <button id="previsualizar" class="accion-principal" disabled>Revisar remito <span id="total-boton">$0</span></button>
+    </section>
+
+    <section id="vista-remito" class="vista">
+      <button class="volver" data-vista="pedido">‹ Editar pedido</button>
+      <h1>Previsualización</h1>
+      <p class="ayuda">Revisá los datos antes de enviar el pedido.</p>
+      <article id="remito" class="remito"></article>
+      <button id="confirmar" class="accion-principal">Confirmar pedido</button>
+    </section>
+
+    <section id="vista-confirmado" class="vista centrada">
+      <div class="check">✓</div><h1>Pedido enviado</h1><p>El pedido quedó pendiente de preparación.</p><button class="accion-secundaria" data-vista="inicio">Volver al inicio</button>
+    </section>
+
+    <nav class="navegacion"><button class="seleccionada" data-vista="inicio">⌂<small>Inicio</small></button><button data-vista="pedido">＋<small>Pedido</small></button><button data-vista="inicio">☷<small>Historial</small></button></nav>
+  </main>
+  <script src="vendedor.js"></script>
+</body>
+</html>
