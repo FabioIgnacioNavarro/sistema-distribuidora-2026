@@ -28,11 +28,17 @@
 
 **Comisiones:** Los vendedores ganan el porcentaje de comisión vigente de las ventas realizadas por ellos mismos. El valor inicial es 10% y puede ser modificado por el Administrador. La comisión se calcula sobre el precio de venta congelado al momento del pedido.
 
+**Historial de comisiones:** Las ventas históricas importadas pueden conservar un porcentaje distinto al vigente actualmente. El porcentaje aplicado a cada venta debe quedar congelado en el pedido o en sus líneas de venta y no recalcularse cuando el Administrador modifique la configuración.
+
 ## Pedidos y Estados
 
 **Vendedores:** Los vendedores podrán emitir pedidos desde su app móvil hacia el backend del sistema, donde aparecerá en el visualizador de pedidos del área de logística. El pedido emitido contendrá: datos del cliente (nombre/razón social, teléfono, dirección), datos del vendedor (nombre, código de usuario), y los detalles del pedido (producto, cantidad, precio de venta).
 
 **Clientes en la base de datos:** Al crear un pedido, el vendedor puede seleccionar un cliente existente o registrar uno nuevo en el momento. Los clientes nuevos se guardan automáticamente en la base de datos para futuras ventas.
+
+**Identificadores comerciales:** Clientes y pedidos tienen un identificador técnico interno y un código visible para el negocio. El código visible del cliente se conserva durante toda su vida útil. El número visible del pedido se utiliza en remitos, historial y comunicación con el cliente.
+
+**Líneas de pedido y lotes:** Cada pedido contiene una sola línea comercial por producto y cantidad solicitada. Al preparar el pedido, esa línea puede distribuirse entre uno o más lotes mediante asignaciones FIFO. La vista del Administrador muestra el producto como una fila desplegable y sus lotes como filas hijas; no se duplican líneas comerciales por cada lote.
 
 **Estado de los pedidos:** Los pedidos tienen 4 estados: Pendiente de preparar, Preparado, Entregado, Cancelado. Transiciones válidas: Pendiente → Preparado, Pendiente → Cancelado, Preparado → Entregado, Preparado → Cancelado (con observación obligatoria). No se permiten retrocesos de estado.
 
@@ -60,6 +66,8 @@
 **Filtros:** Las tablas de visualización de stock, lotes, ventas y compras, entre otras, tendrán filtros que facilitarán la búsqueda de datos.
 
 **Historial y auditoría:** Todo cambio de estado de pedido, ajuste de stock, modificación de precio y carga/anulación de factura queda registrado con: usuario, fecha/hora, valor anterior y valor nuevo. Este historial es de solo lectura para Administrador.
+
+**Remito:** Al guardar un pedido, el vendedor debe poder revisar una previsualización del remito antes de confirmarlo. El remito se genera agrupando las líneas del pedido por número de pedido y conserva el formato comercial definido para Fontana Distribuciones. La impresión/exportación utiliza los datos congelados del pedido y no los precios actuales.
 
 ## Estructura de Módulos (Admin Web)
 
@@ -97,6 +105,9 @@
 3. Edición de pedidos: **Solo cambio de estado + cancelación con observación**. No se editan items/cantidades; se cancela y recrea
 4. Rol Logística: **Puede cambiar estados** de pedidos y gestionar rutas
 5. Visibilidad de lotes: **NO en Lista de Precios**. SÍ en Stock → Lotes (detalle por lote con remanente). Resumen de rentabilidad vive en Ventas
+6. La comisión vigente es configurable, comienza en 10% y cada pedido conserva el porcentaje realmente aplicado
+7. La vista comercial agrupa un producto por pedido; las asignaciones FIFO a lotes se muestran como detalle hijo
+8. El remito se previsualiza antes de confirmar y se puede imprimir con el formato comercial acordado
 
 ---
 *Documento versión 1.0 — Última actualización: Agosto 2026*

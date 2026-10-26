@@ -42,7 +42,7 @@ Tabla con totalidad de pedidos entregados, sus detalles y ganancia final.
 #### Tabla Principal
 | Columna |
 | :--- |
-| IdPedido \| IdRutaReparto \| FechaYHora (pedido) \| FechaYHora (entrega) \| Cliente \| DirecciónEntrega \| Vendedor \| Repartidor \| GananciaTotal \| Botón de detalle |
+| IdPedido \| IdRutaReparto \| FechaYHora (pedido) \| FechaYHora (entrega) \| Cliente \| DirecciónEntrega \| Vendedor \| Repartidor \| ImporteTotal \| GananciaTotal \| Botón de detalle |
 
 #### Detalle del Pedido/Remito
 
@@ -51,6 +51,8 @@ IdPedido, IdRutaReparto, FechaYHora (pedido), FechaYHora (entrega), Cliente, Dir
 
 **Items del pedido** (cada entrada es un producto; dentro de cada producto se muestran los lotes involucrados en la venta):
 
+La línea comercial del producto se guarda una sola vez. Las asignaciones a lotes se muestran como filas hijas y contienen la cantidad, costo y rentabilidad específica de cada lote.
+
 ```text
 NombreProducto | Categoría
     └─ IdLote_1 | CostoUnitario | Cantidad | Markup | Renta | PrecioVenta | ComisiónVendedor (10% o 0%) | GananciaNetaPorUnidad_1 | GananciaNetaTotal_1
@@ -58,6 +60,8 @@ NombreProducto | Categoría
 
 GananciaTotalPedido
 ```
+
+El detalle también muestra `ImporteTotalPedido` antes de `GananciaTotalPedido`.
 
 ---
 
