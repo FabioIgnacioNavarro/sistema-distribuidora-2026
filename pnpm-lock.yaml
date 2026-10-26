@@ -32,6 +32,9 @@ importers:
 
   apps/admin:
     dependencies:
+      '@distribuidora/tipos-compartidos':
+        specifier: workspace:*
+        version: link:../../packages/tipos-compartidos
       react:
         specifier: 18.3.1
         version: 18.3.1
