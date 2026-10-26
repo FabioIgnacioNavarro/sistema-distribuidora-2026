@@ -4,7 +4,7 @@ const productos = [
   { id: 'SNK-003', nombre: 'Crutons Minitostaditas Queso', precio: 1800 },
   { id: 'ALI-045.1', nombre: 'Fideo Santa Isabel 500g Coditos', precio: 600 },
 ];
-const pedidos = [{ numero: '10001', cliente: 'Avicola 912', total: 15400, estado: 'Pendiente' }, { numero: '10000', cliente: 'Tickets bajos', total: 48600, estado: 'Entregado' }];
+const pedidos = [{ numero: '10001', cliente: 'Avicola 912', total: 15400 }, { numero: '10000', cliente: 'Tickets bajos', total: 48600 }];
 const carrito = new Map();
 const dinero = (valor) => `$${valor.toLocaleString('es-AR')}`;
 const $ = (selector) => document.querySelector(selector);
@@ -35,7 +35,7 @@ function renderRemito() {
   $('#remito').innerHTML = `<div class="remito-cabecera"><div><strong>FONTANA DISTRIBUCIONES</strong><small>Remito de pedido</small></div><strong>PREVISUALIZACIÓN</strong></div><p><b>Cliente:</b> ${cliente}</p>${lineas}<div class="total"><span>TOTAL PEDIDO</span><span>${dinero(total)}</span></div>`;
 }
 
-$('#resumen-pedidos').innerHTML = pedidos.map((pedido) => `<div class="pedido-anterior"><div><strong>#${pedido.numero}</strong><small>${pedido.cliente} · ${dinero(pedido.total)}</small></div><span class="estado">${pedido.estado}</span></div>`).join('');
+$('#resumen-pedidos').innerHTML = pedidos.map((pedido) => `<div class="pedido-anterior"><div><strong>#${pedido.numero}</strong><small>${pedido.cliente} · ${dinero(pedido.total)}</small></div></div>`).join('');
 $('#catalogo').addEventListener('click', (evento) => { const boton = evento.target.closest('button[data-producto]'); if (!boton) return; const id = boton.dataset.producto; const cantidad = Math.max(0, (carrito.get(id) ?? 0) + Number(boton.dataset.cambio)); cantidad ? carrito.set(id, cantidad) : carrito.delete(id); renderCatalogo(); });
 document.querySelectorAll('[data-vista]').forEach((boton) => boton.addEventListener('click', () => mostrarVista(boton.dataset.vista)));
 $('#previsualizar').addEventListener('click', () => { renderRemito(); mostrarVista('remito'); });

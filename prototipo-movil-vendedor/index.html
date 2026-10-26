@@ -7,28 +7,44 @@
   <link rel="stylesheet" href="estilos.css" />
 </head>
 <body>
+  <section id="pantalla-acceso" class="pantalla-acceso">
+    <div class="acceso-tarjeta"><span class="marca">FONTANA</span><h1>Ingresar a la app</h1><p>Usá tu código de vendedor o chofer para continuar.</p><input id="codigo-acceso" type="password" placeholder="Código de acceso" autocomplete="off" /><button id="ingresar" class="accion-principal">Ingresar</button><small id="error-acceso" class="error-acceso" hidden>Código incorrecto. Probá con pass1234.</small></div>
+  </section>
   <main class="telefono">
     <header class="encabezado">
       <div><span class="marca">FONTANA</span><span class="submarca">Vendedor</span></div>
-      <button class="icono" data-accion="notificaciones" aria-label="Notificaciones">♢</button>
+      <button id="alternar-tema" class="icono" aria-label="Cambiar modo de color">☾</button>
     </header>
 
     <section id="vista-inicio" class="vista activa">
       <p class="saludo">Buen día, Martín</p>
       <h1>¿Qué hacemos hoy?</h1>
       <button class="accion-principal" data-vista="pedido">+ Nuevo pedido</button>
-      <div class="tarjetas-resumen"><div><strong>12</strong><span>Pedidos del mes</span></div><div><strong>$184.600</strong><span>Vendido este mes</span></div></div>
-      <h2>Últimos pedidos</h2>
-      <div id="resumen-pedidos" class="lista"></div>
+      <button class="accion-secundaria boton-ancho" data-vista="precios">$ Lista de precios</button>
+      <h2>Resumen de rentabilidad</h2>
+      <div class="tarjetas-resumen"><div><strong>4</strong><span>Pedidos del día</span></div><div><strong>12</strong><span>Pedidos del mes</span></div><div><strong>$184.600</strong><span>Ganancia total</span></div></div>
     </section>
 
     <section id="vista-pedido" class="vista">
       <button class="volver" data-vista="inicio">‹ Inicio</button>
       <h1>Nuevo pedido</h1>
-      <label>Cliente<select id="cliente"><option>Tickets bajos</option><option>Avicola 912</option><option>Kiosco Gema (Tati)</option></select></label>
+      <label>Buscar cliente<input id="buscar-cliente" class="campo" type="search" placeholder="Nombre, código o teléfono" autocomplete="off" /></label>
+      <div id="clientes-resultados" class="clientes-resultados"></div>
+      <div id="cliente-seleccionado" class="cliente-seleccionado" hidden></div>
+      <button id="mostrar-alta-cliente" class="boton-enlace" type="button">+ Añadir cliente</button>
+      <form id="formulario-cliente" class="formulario-cliente" hidden><input id="nuevo-nombre" required placeholder="Nombre comercial" /><input id="nuevo-direccion" placeholder="Dirección" /><input id="nuevo-telefono" placeholder="Teléfono" /><button class="accion-secundaria" type="submit">Guardar y seleccionar</button></form>
       <div class="fila-titulo"><h2>Productos</h2><span id="contador">0 productos</span></div>
+      <input id="filtro-productos" class="campo" type="search" placeholder="Filtrar productos por nombre o categoría" autocomplete="off" />
       <div id="catalogo" class="catalogo"></div>
       <button id="previsualizar" class="accion-principal" disabled>Revisar remito <span id="total-boton">$0</span></button>
+    </section>
+
+    <section id="vista-precios" class="vista">
+      <button class="volver" data-vista="inicio">‹ Inicio</button><h1>Lista de precios</h1><p class="ayuda">Precios públicos vigentes para consultar durante la visita.</p><input id="filtro-precios" class="campo" type="search" placeholder="Buscar producto o categoría" autocomplete="off" /><div id="lista-precios" class="lista-precios"></div>
+    </section>
+
+    <section id="vista-historial" class="vista">
+      <button class="volver" data-vista="inicio">‹ Inicio</button><h1>Historial de pedidos</h1><p class="ayuda">Consultá los pedidos que registraste, sin información operativa de entrega.</p><div id="historial-pedidos" class="lista"></div>
     </section>
 
     <section id="vista-remito" class="vista">
@@ -43,8 +59,8 @@
       <div class="check">✓</div><h1>Pedido enviado</h1><p>El pedido quedó pendiente de preparación.</p><button class="accion-secundaria" data-vista="inicio">Volver al inicio</button>
     </section>
 
-    <nav class="navegacion"><button class="seleccionada" data-vista="inicio">⌂<small>Inicio</small></button><button data-vista="pedido">＋<small>Pedido</small></button><button data-vista="inicio">☷<small>Historial</small></button></nav>
+    <nav class="navegacion"><button class="seleccionada" data-vista="inicio">⌂<small>Inicio</small></button><button data-vista="pedido">＋<small>Pedido</small></button><button data-vista="historial">☷<small>Historial</small></button></nav>
   </main>
-  <script src="vendedor.js"></script>
+  <script src="vendedor-acceso.js"></script><script src="vendedor-filtros.js"></script>
 </body>
 </html>
