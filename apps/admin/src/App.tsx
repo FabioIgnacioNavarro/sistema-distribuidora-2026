@@ -886,6 +886,7 @@ function TablaLotes({
   navegar: (vista: Vista) => void;
 }): JSX.Element {
   const [proveedor, setProveedor] = useState("");
+  const [busqueda, setBusqueda] = useState("");
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
   const [ordenFecha, setOrdenFecha] = useState<"recientes" | "antiguas">(
@@ -928,6 +929,21 @@ function TablaLotes({
     ),
   ).sort();
   const gruposFiltrados = grupos
+    .filter((grupo) => {
+      const texto = [
+        grupo.codigo,
+        grupo.numeroFactura,
+        grupo.proveedor,
+        ...grupo.lineas.flatMap((linea) => [
+          linea.productoSku,
+          linea.productoNombre,
+        ]),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return !busqueda.trim() || texto.includes(busqueda.trim().toLowerCase());
+    })
     .filter((grupo) => mostrarAgotados || grupo.cantidadRestante > 0)
     .filter((grupo) => !proveedor || grupo.proveedor === proveedor)
     .filter(
@@ -965,6 +981,15 @@ function TablaLotes({
         </button>
       </div>
       <section className="panel filtros-lotes">
+        <label>
+          Buscar lote, factura o producto
+          <input
+            type="search"
+            value={busqueda}
+            onChange={(evento) => setBusqueda(evento.target.value)}
+            placeholder="Código, factura, proveedor o producto"
+          />
+        </label>
         <label>
           Proveedor
           <select
@@ -1866,6 +1891,7 @@ function HistorialCompras({
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
   const [proveedor, setProveedor] = useState("");
+  const [busqueda, setBusqueda] = useState("");
   const [orden, setOrden] = useState<"recientes" | "antiguas">("recientes");
   const [seleccionadaId, setSeleccionadaId] = useState<string | null>(null);
   const [pagina, setPagina] = useState(1);
@@ -1873,6 +1899,13 @@ function HistorialCompras({
     new Set(compras.map((compra) => compra.proveedor)),
   ).sort();
   const filtradas = compras
+    .filter(
+      (compra) =>
+        !busqueda.trim() ||
+        `${compra.nroFactura} ${compra.proveedor}`
+          .toLowerCase()
+          .includes(busqueda.trim().toLowerCase()),
+    )
     .filter((compra) => !fechaDesde || compra.fechaCompra >= fechaDesde)
     .filter((compra) => !fechaHasta || compra.fechaCompra <= fechaHasta)
     .filter((compra) => !proveedor || compra.proveedor === proveedor)
@@ -1909,6 +1942,15 @@ function HistorialCompras({
         </button>
       </div>
       <section className="panel filtros-historial-compras">
+        <label>
+          Buscar factura o proveedor
+          <input
+            type="search"
+            value={busqueda}
+            onChange={(evento) => setBusqueda(evento.target.value)}
+            placeholder="Número de factura o proveedor"
+          />
+        </label>
         <label>
           Desde
           <input
