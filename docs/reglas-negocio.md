@@ -34,6 +34,14 @@
 
 **Vendedores:** Los vendedores podrán emitir pedidos desde su app móvil hacia el backend del sistema, donde aparecerá en el visualizador de pedidos del área de logística. El pedido emitido contendrá: datos del cliente (nombre/razón social, teléfono, dirección), datos del vendedor (nombre, código de usuario), y los detalles del pedido (producto, cantidad, precio de venta).
 
+**Condición y plazo de pago:** Al emitir un pedido, el vendedor debe seleccionar una condición de pago. Las opciones iniciales son: cuenta corriente a 7 días, cuenta corriente a 14 días, cuenta corriente a 30 días, transferencia, contado y tarjeta. La condición seleccionada se guarda en el pedido y aparece en la previsualización e impresión del remito. Las condiciones deben ser configurables por el Administrador, sin modificar retrospectivamente los pedidos ya emitidos.
+
+**Fecha de vencimiento:** Para condiciones a cuenta corriente, el sistema calcula y conserva la fecha de vencimiento a partir de la fecha de emisión del pedido. Para contado, transferencia y tarjeta, el pedido no requiere una fecha de vencimiento futura, pero sí conserva la condición elegida y el estado de cobro.
+
+**Estado de cobro:** El cobro se gestiona de forma independiente al estado logístico. Un pedido puede estar `sin_cobrar`, `cobrado_parcialmente` o `cobrado_totalmente`. El estado se deriva del total del pedido y de la suma de cobranzas confirmadas; nunca se modifica manualmente sin registrar el movimiento correspondiente. Una cobranza no puede superar el saldo pendiente.
+
+**Historial de cobranzas:** Un pedido puede tener varias cobranzas. Cada cobranza conserva importe, fecha, medio de pago, observación y persona que la registró. El Administrador puede consultar un mini historial de cobranzas dentro del detalle del pedido y registrar pagos parciales o cancelar una cobranza según las reglas de auditoría. Las cobranzas confirmadas quedan auditadas y no se eliminan físicamente.
+
 **Clientes en la base de datos:** Al crear un pedido, el vendedor puede seleccionar un cliente existente o registrar uno nuevo en el momento. Los clientes nuevos se guardan automáticamente en la base de datos para futuras ventas.
 
 **Identificadores comerciales:** Clientes y pedidos tienen un identificador técnico interno y un código visible para el negocio. El código visible del cliente se conserva durante toda su vida útil. El número visible del pedido se utiliza en remitos, historial y comunicación con el cliente.
@@ -73,7 +81,7 @@
 
 - **Ventas**
   - Registrar ventas (nota de pedido) → genera Pedido con Estado "Pendiente de preparar"
-  - Historial de pedidos
+  - Pedidos
   - Resumen de rentabilidad
 - **Compras**
   - Registrar compras (factura → Lote)
@@ -91,7 +99,7 @@
   - Cargar nuevo cliente
   - Modificar datos de cliente
 - **Logística**
-  - Lista de pedidos (Pendiente de preparar, Preparado, Entregado, Cancelado)
+  - Entrega de pedidos (Pendiente de preparar, Preparado, Entregado, Cancelado)
   - Cargar ruta de reparto
   - Lista de rutas de reparto actuales
   - Lista de vehículos
@@ -108,6 +116,8 @@
 6. La comisión vigente es configurable, comienza en 10% y cada pedido conserva el porcentaje realmente aplicado
 7. La vista comercial agrupa un producto por pedido; las asignaciones FIFO a lotes se muestran como detalle hijo
 8. El remito se previsualiza antes de confirmar y se puede imprimir con el formato comercial acordado
+9. La condición de pago, el vencimiento y el estado de cobro se gestionan separados del estado logístico del pedido
+10. Un pedido puede tener múltiples cobranzas y conserva el historial completo de esos movimientos
 
 ---
 *Documento versión 1.0 — Última actualización: Agosto 2026*

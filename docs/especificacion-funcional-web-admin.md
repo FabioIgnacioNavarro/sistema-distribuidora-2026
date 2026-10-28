@@ -3,7 +3,7 @@
 
 ---
 
-## 1. PANTALLA DE BIENVENIDA / DASHBOARD
+## 1. PANTALLA DE BIENVENIDA / PANEL DE INICIO
 
 ### Mensaje Personalizado
 > Bienvenido de nuevo, Fabio.
@@ -26,28 +26,32 @@ Pantalla donde se ven los costes de funcionamiento sumados a las ganancias netas
 #### Gráficos
 - **Gráfico de torta de gastos:** Por categoría, filtrable por semana, mes y año.
 - **Gráfico de torta de relevancia de vendedores:** Sobre pedidos/ganancias de la distribuidora, filtrable por mes y año.
+- **Gráfico de torta de cobranza:** Compara el importe cobrado contra el importe pendiente de cobro del período seleccionado. Debe poder distinguir, como mínimo, cobrado y pendiente, y actualizarse con cobranzas parciales o totales confirmadas.
 - **Gráfico de montaña (rentabilidad):** Muestra ganancias brutas (`PrecioVenta − Costo`) y netas (`− comisiones`), filtrable por semana, mes y año.
 - **Gráfico de montaña (volumen):** Muestra cantidad de ventas, filtrable por semana, mes y año.
 
-### 2.2 Historial de Pedidos
-Tabla con totalidad de pedidos entregados, sus detalles y ganancia final.
+### 2.2 Pedidos
+Tabla con los pedidos, sus detalles comerciales, estado de entrega, estado de cobro y ganancia final. Esta pantalla reemplaza el nombre anterior “Historial de Pedidos”.
 
 #### Filtros
 - Desde x fecha / Hasta x fecha
 - Por Vendedor
 - Por Cliente
 - Por Repartidor
+- Por estado de entrega
+- Por estado de cobro: Sin cobrar / Cobrado parcialmente / Cobrado totalmente
+- Por condición de pago y vencimiento
 - Ordenar por antigüedad (ascendente y descendente)
 
 #### Tabla Principal
 | Columna |
 | :--- |
-| IdPedido \| IdRutaReparto \| FechaYHora (pedido) \| FechaYHora (entrega) \| Cliente \| DirecciónEntrega \| Vendedor \| Repartidor \| ImporteTotal \| GananciaTotal \| Botón de detalle |
+| IdPedido \| IdRutaReparto \| FechaYHora (pedido) \| FechaYHora (entrega) \| Cliente \| DirecciónEntrega \| Vendedor \| Repartidor \| ImporteTotal \| ImporteCobrado \| SaldoPendiente \| EstadoCobro \| GananciaTotal \| Botón de detalle |
 
 #### Detalle del Pedido/Remito
 
 **Cabecera:**
-IdPedido, IdRutaReparto, FechaYHora (pedido), FechaYHora (entrega), Cliente, DirecciónEntrega, Vendedor, Repartidor
+IdPedido, IdRutaReparto, FechaYHora (pedido), FechaYHora (entrega), Cliente, DirecciónEntrega, Vendedor, Repartidor, CondiciónPago, FechaVencimiento, EstadoEntrega, EstadoCobro
 
 **Items del pedido** (cada entrada es un producto; dentro de cada producto se muestran los lotes involucrados en la venta):
 
@@ -62,6 +66,24 @@ GananciaTotalPedido
 ```
 
 El detalle también muestra `ImporteTotalPedido` antes de `GananciaTotalPedido`.
+
+#### Cobranza del pedido
+
+El detalle debe mostrar una tarjeta de resumen con:
+
+| Importe total | Importe cobrado | Saldo pendiente | Estado de cobro | Vencimiento |
+| :--- | :--- | :--- | :--- | :--- |
+
+Debajo se muestra el mini historial de cobranzas:
+
+| Fecha | Importe | Medio de pago | Registrado por | Observación |
+| :--- | :--- | :--- | :--- | :--- |
+
+El Administrador dispone de la acción **Registrar cobranza**, que permite cargar un pago total o parcial. Al confirmar, se recalculan `ImporteCobrado`, `SaldoPendiente` y `EstadoCobro`.
+
+### 2.3 Condiciones de pago
+
+Las condiciones disponibles para vendedores y Administradores se administran desde configuración. Cada condición contiene nombre, tipo (contado, transferencia, tarjeta o cuenta corriente), cantidad de días de plazo y estado activo/inactivo. Desactivar una condición no cambia pedidos históricos.
 
 ---
 
@@ -289,7 +311,7 @@ Mismo formulario de carga, reutilizado para edición.
 
 ## 9. MÓDULO: LOGÍSTICA (5 subpantallas)
 
-### 9.1 Lista de Pedidos
+### 9.1 Entrega de pedidos
 Tabla con todos los pedidos pendientes de preparar y entregar. Los entregados son accesibles por filtro.
 
 #### Filtros
@@ -300,11 +322,11 @@ Tabla con todos los pedidos pendientes de preparar y entregar. Los entregados so
 #### Tabla Principal
 | Columna |
 | :--- |
-| IdPedido \| Cliente \| Dirección \| FechaEmisión \| Vendedor \| Estado \| + Ver más detalles |
+| IdPedido \| Cliente \| Dirección \| FechaEmisión \| Vendedor \| EstadoEntrega \| EstadoCobro \| + Ver más detalles |
 
 #### Detalle de Pedido
 - Botón de imprimir remito
-- **Cabecera:** IdPedido | Cliente | Dirección | FechaEmisión | Vendedor | Estado
+- **Cabecera:** IdPedido | Cliente | Dirección | FechaEmisión | Vendedor | EstadoEntrega | EstadoCobro
 - **Items:**
 
 | Producto | Cantidad | PrecioVentaUnitario | Subtotal |

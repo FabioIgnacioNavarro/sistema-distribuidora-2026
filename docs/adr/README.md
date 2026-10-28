@@ -14,3 +14,4 @@
 | [010](./010-linea-comercial-y-lotes.md) | Línea comercial y asignaciones FIFO | Aceptado |
 | [011](./011-importacion-historicos.md) | Importación de históricos | Aceptado |
 | [012](./012-remitos.md) | Previsualización e impresión de remitos | Aceptado |
+| [013](./013-condiciones-y-cobranzas.md) | Condiciones de pago y cobranzas separadas del estado de entrega | Aceptado |
