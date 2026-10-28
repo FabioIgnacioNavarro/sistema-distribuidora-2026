@@ -628,12 +628,16 @@ function Filtros({
   onBuscar,
   categoria,
   onCategoria,
+  mostrarCategoria = true,
+  placeholder = "Buscar por SKU o nombre...",
   children,
 }: {
   categorias: string[];
   onBuscar?: (texto: string) => void;
   categoria: string;
   onCategoria: (categoria: string) => void;
+  mostrarCategoria?: boolean;
+  placeholder?: string;
   children?: ReactNode;
 }): JSX.Element {
   return (
@@ -642,20 +646,22 @@ function Filtros({
         <span>⌕</span>
         <input
           onChange={(evento) => onBuscar?.(evento.target.value)}
-          placeholder="Buscar por SKU o nombre..."
+          placeholder={placeholder}
         />
       </label>
-      <select
-        value={categoria}
-        onChange={(evento) => onCategoria(evento.target.value)}
-      >
-        <option value="">Todas las categorías</option>
-        {categorias.map((item) => (
-          <option key={item} value={item}>
-            {item}
-          </option>
-        ))}
-      </select>
+      {mostrarCategoria && (
+        <select
+          value={categoria}
+          onChange={(evento) => onCategoria(evento.target.value)}
+        >
+          <option value="">Todas las categorías</option>
+          {categorias.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
+        </select>
+      )}
       {children}
     </div>
   );
@@ -980,16 +986,14 @@ function TablaLotes({
           ＋ Registrar compra
         </button>
       </div>
-      <section className="panel filtros-lotes">
-        <label>
-          Buscar lote, factura o producto
-          <input
-            type="search"
-            value={busqueda}
-            onChange={(evento) => setBusqueda(evento.target.value)}
-            placeholder="Código, factura, proveedor o producto"
-          />
-        </label>
+      <Filtros
+        categorias={[]}
+        categoria=""
+        onCategoria={() => undefined}
+        onBuscar={setBusqueda}
+        mostrarCategoria={false}
+        placeholder="Buscar lote, factura, proveedor o producto..."
+      >
         <label>
           Proveedor
           <select
@@ -1040,7 +1044,7 @@ function TablaLotes({
           />{" "}
           Mostrar lotes vacíos / agotados
         </label>
-      </section>
+      </Filtros>
       <div className="tabla-contenedor">
         <table>
           <thead>
@@ -1941,16 +1945,14 @@ function HistorialCompras({
           ＋ Nueva compra
         </button>
       </div>
-      <section className="panel filtros-historial-compras">
-        <label>
-          Buscar factura o proveedor
-          <input
-            type="search"
-            value={busqueda}
-            onChange={(evento) => setBusqueda(evento.target.value)}
-            placeholder="Número de factura o proveedor"
-          />
-        </label>
+      <Filtros
+        categorias={[]}
+        categoria=""
+        onCategoria={() => undefined}
+        onBuscar={setBusqueda}
+        mostrarCategoria={false}
+        placeholder="Buscar número de factura o proveedor..."
+      >
         <label>
           Desde
           <input
@@ -1993,7 +1995,7 @@ function HistorialCompras({
             <option value="antiguas">Más antiguas</option>
           </select>
         </label>
-      </section>
+      </Filtros>
       <div className="tabla-contenedor">
         <table>
           <thead>

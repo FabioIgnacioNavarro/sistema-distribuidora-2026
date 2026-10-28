@@ -479,6 +479,19 @@ button {
   border-radius: 10px;
   background: #fff;
 }
+.barra-filtros input[type="date"] {
+  min-height: 42px;
+  padding: 0 10px;
+  color: #56665c;
+  border: 1px solid #dce6dd;
+  border-radius: 10px;
+  background: #fff;
+}
+.app--oscura .barra-filtros input[type="date"] {
+  color: inherit;
+  border-color: var(--borde);
+  background: var(--superficie);
+}
 .boton-filtro {
   min-width: auto;
   font-size: 13px;
