@@ -12,6 +12,8 @@ import {
   View,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import * as NavigationBar from "expo-navigation-bar";
@@ -28,6 +30,7 @@ interface Producto {
   nombre: string;
   categoria: string;
   precio: number;
+  stock: number;
 }
 interface Cliente {
   codigo: string;
@@ -35,7 +38,76 @@ interface Cliente {
   direccion: string;
   telefono: string;
 }
-const productos: Producto[] = [
+interface LineaPedidoVendedor {
+  productoId: string;
+  nombreProducto: string;
+  cantidad: number;
+  precioUnitario: number;
+}
+interface PedidoVendedor {
+  id: string;
+  numero: number;
+  fecha: string;
+  cliente: Cliente;
+  condicionPago: string;
+  lineas: LineaPedidoVendedor[];
+  importeTotal: number;
+  porcentajeComision: number;
+  ganancia: number | null;
+  usuarioId?: string;
+  nombreVendedor?: string;
+  vendidoPorDueno?: boolean;
+}
+interface UsuarioMovil {
+  id: string;
+  nombre: string;
+  rol: "vendedor" | "dueno";
+}
+const USUARIO_VENDEDOR: UsuarioMovil = {
+  id: "martin",
+  nombre: "Martín",
+  rol: "vendedor",
+};
+const USUARIO_DUENO: UsuarioMovil = {
+  id: "fabio",
+  nombre: "Fabio",
+  rol: "dueno",
+};
+const CLAVE_PEDIDOS_LOCALES = "fontana.pedidos-vendedor.v1";
+const PORCENTAJE_COMISION_VENDEDOR = 10;
+
+function esPedidoVendedor(valor: unknown): valor is PedidoVendedor {
+  if (typeof valor !== "object" || valor === null) return false;
+  const pedido = valor as Record<string, unknown>;
+  if (
+    typeof pedido.id !== "string" ||
+    typeof pedido.numero !== "number" ||
+    typeof pedido.fecha !== "string" ||
+    typeof pedido.condicionPago !== "string" ||
+    typeof pedido.importeTotal !== "number" ||
+    typeof pedido.porcentajeComision !== "number" ||
+    (typeof pedido.ganancia !== "number" && pedido.ganancia !== null) ||
+    !Array.isArray(pedido.lineas) ||
+    typeof pedido.cliente !== "object" ||
+    pedido.cliente === null
+  ) return false;
+  const cliente = pedido.cliente as Record<string, unknown>;
+  return (
+    typeof cliente.codigo === "string" &&
+    typeof cliente.nombre === "string" &&
+    typeof cliente.direccion === "string" &&
+    typeof cliente.telefono === "string" &&
+    pedido.lineas.every((linea: unknown) => {
+      if (typeof linea !== "object" || linea === null) return false;
+      const item = linea as Record<string, unknown>;
+      return typeof item.productoId === "string" &&
+        typeof item.nombreProducto === "string" &&
+        typeof item.cantidad === "number" &&
+        typeof item.precioUnitario === "number";
+    })
+  );
+}
+const productosBase = [
   {
     id: "ALI-059",
     nombre: "Aceite Cocinero 900cc",
@@ -60,7 +132,32 @@ const productos: Producto[] = [
     categoria: "Almacén",
     precio: 600,
   },
+  { id: "ALI-046.1", nombre: "Fideo Santa Isabel 500g Mostachol", categoria: "Almacén", precio: 600 },
+  { id: "ALI-047.1", nombre: "Fideo Santa Isabel 500g Spaghetti", categoria: "Almacén", precio: 600 },
+  { id: "ALI-048.1", nombre: "Fideo Santa Isabel 500g Tallarín", categoria: "Almacén", precio: 600 },
+  { id: "ALI-050.OF", nombre: "Puré de tomate Santa Isabel 520g", categoria: "Almacén", precio: 620 },
+  { id: "ALI-036.0", nombre: "Aceite Legítimo 1500cc", categoria: "Almacén", precio: 4750 },
+  { id: "ALI-037.OF", nombre: "Aceite Legítimo 900cc", categoria: "Almacén", precio: 3190 },
+  { id: "ALI-061", nombre: "Arroz largo fino 1kg", categoria: "Almacén", precio: 1250 },
+  { id: "ALI-072", nombre: "Azúcar común 1kg", categoria: "Almacén", precio: 1100 },
+  { id: "ALI-083", nombre: "Harina de trigo 1kg", categoria: "Almacén", precio: 980 },
+  { id: "ALI-091", nombre: "Yerba mate 1kg", categoria: "Almacén", precio: 2850 },
+  { id: "BEB-G002.1", nombre: "Coca-Cola PET 2250cc", categoria: "Bebidas", precio: 3600 },
+  { id: "BEB-G007.NF", nombre: "Sprite PET 2250cc", categoria: "Bebidas", precio: 3600 },
+  { id: "BEB-G014.1", nombre: "Aquarius 2500cc Limonada", categoria: "Bebidas", precio: 2135 },
+  { id: "BEB-G015.1", nombre: "Aquarius 2500cc Manzana", categoria: "Bebidas", precio: 2135 },
+  { id: "BEB-V012", nombre: "Alaris Malbec", categoria: "Bebidas", precio: 4100 },
+  { id: "BEB-L001.1", nombre: "Fernet Branca 750cc", categoria: "Bebidas", precio: 14450 },
+  { id: "SNK-002", nombre: "Crutons Minitostaditas Jamón", categoria: "Snacks", precio: 1800 },
+  { id: "SNK-004", nombre: "Crutons Minitostaditas Salame", categoria: "Snacks", precio: 1800 },
+  { id: "SNK-011", nombre: "Papas fritas clásicas 100g", categoria: "Snacks", precio: 1500 },
+  { id: "SNK-014", nombre: "Maní tostado salado 100g", categoria: "Snacks", precio: 950 },
 ];
+const STOCK_DEMO = [168, 0, 24, 12, 30, 18, 228, 42, 55, 60, 36, 84, 120, 48, 22, 24, 18, 36, 12, 45, 0, 32, 28, 15];
+const productos: Producto[] = productosBase.map((producto, indice) => ({
+  ...producto,
+  stock: STOCK_DEMO[indice] ?? 0,
+}));
 const clientesIniciales: Cliente[] = [
   {
     codigo: "CL-0000",
@@ -94,6 +191,7 @@ const etiquetaCondicion = (valor: string): string =>
 
 export function AppVendedorDiseñada(): React.JSX.Element {
   const [autenticado, setAutenticado] = useState(false);
+  const [usuarioActivo, setUsuarioActivo] = useState<UsuarioMovil | null>(null);
   const [codigo, setCodigo] = useState("");
   const [error, setError] = useState(false);
   const [vista, setVista] = useState<Vista>("inicio");
@@ -104,8 +202,14 @@ export function AppVendedorDiseñada(): React.JSX.Element {
   const [condicionPago, setCondicionPago] = useState("cuenta_corriente_7");
   const [busquedaProducto, setBusquedaProducto] = useState("");
   const [categoria, setCategoria] = useState("Todas");
+  const [paginaProductos, setPaginaProductos] = useState(0);
   const [cantidades, setCantidades] = useState<Record<string, number>>({});
   const [detalleAbierto, setDetalleAbierto] = useState<string | null>(null);
+  const [pedidos, setPedidos] = useState<PedidoVendedor[]>([]);
+  const [pedidosCargados, setPedidosCargados] = useState(false);
+  const [almacenamientoDisponible, setAlmacenamientoDisponible] = useState(false);
+  const [guardandoPedido, setGuardandoPedido] = useState(false);
+  const [paginaPrecios, setPaginaPrecios] = useState(0);
   const [modalCliente, setModalCliente] = useState(false);
   const [modalRemito, setModalRemito] = useState(false);
   const [nuevoNombre, setNuevoNombre] = useState("");
@@ -114,7 +218,11 @@ export function AppVendedorDiseñada(): React.JSX.Element {
   const tema = oscuro ? colores.oscuro : colores.claro;
   const categorias = [
     "Todas",
-    ...new Set(productos.map((producto) => producto.categoria)),
+    ...new Set(
+      productos
+        .filter((producto) => producto.stock > 0)
+        .map((producto) => producto.categoria),
+    ),
   ];
   const total = useMemo(
     () =>
@@ -132,9 +240,85 @@ export function AppVendedorDiseñada(): React.JSX.Element {
   );
   const productosFiltrados = productos.filter(
     (item) =>
+      item.stock > 0 &&
       item.nombre.toLowerCase().includes(busquedaProducto.toLowerCase()) &&
       (categoria === "Todas" || item.categoria === categoria),
   );
+  const productosPorPagina = 10;
+  const totalPaginasProductos = Math.max(
+    1,
+    Math.ceil(productosFiltrados.length / productosPorPagina),
+  );
+  const paginaProductosVisible = Math.min(
+    paginaProductos,
+    totalPaginasProductos - 1,
+  );
+  const productosPaginados = productosFiltrados.slice(
+    paginaProductosVisible * productosPorPagina,
+    (paginaProductosVisible + 1) * productosPorPagina,
+  );
+  const productosPorPaginaPrecios = 20;
+  const totalPaginasPrecios = Math.max(
+    1,
+    Math.ceil(productosFiltrados.length / productosPorPaginaPrecios),
+  );
+  const paginaPreciosVisible = Math.min(paginaPrecios, totalPaginasPrecios - 1);
+  const productosPaginadosPrecios = productosFiltrados.slice(
+    paginaPreciosVisible * productosPorPaginaPrecios,
+    (paginaPreciosVisible + 1) * productosPorPaginaPrecios,
+  );
+  const ahora = new Date();
+  const pedidosDelUsuario = pedidos.filter(
+    (pedido) =>
+      pedido.usuarioId === usuarioActivo?.id ||
+      (!pedido.usuarioId && usuarioActivo?.id === USUARIO_VENDEDOR.id),
+  );
+  const pedidosDelDia = pedidosDelUsuario.filter((pedido) => {
+    const fecha = new Date(pedido.fecha);
+    return fecha.toDateString() === ahora.toDateString();
+  });
+  const pedidosDelMes = pedidosDelUsuario.filter((pedido) => {
+    const fecha = new Date(pedido.fecha);
+    return fecha.getFullYear() === ahora.getFullYear() &&
+      fecha.getMonth() === ahora.getMonth();
+  });
+  const gananciaTotalVendedor = pedidosDelUsuario.reduce(
+    (suma, pedido) => suma + (pedido.ganancia ?? 0),
+    0,
+  );
+  const productosEnPedido = productos.filter(
+    (producto) => (cantidades[producto.id] ?? 0) > 0,
+  );
+  useEffect(() => {
+    setPaginaProductos(0);
+  }, [busquedaProducto, categoria]);
+  useEffect(() => {
+    setPaginaPrecios(0);
+  }, [busquedaProducto, categoria]);
+  useEffect(() => {
+    let activo = true;
+    void AsyncStorage.getItem(CLAVE_PEDIDOS_LOCALES)
+      .then((contenido) => {
+        if (!activo || !contenido) return;
+        const datos: unknown = JSON.parse(contenido);
+        if (Array.isArray(datos)) setPedidos(datos.filter(esPedidoVendedor));
+      })
+      .then(() => {
+        if (activo) setAlmacenamientoDisponible(true);
+      })
+      .catch((error: unknown) => {
+        if (activo) {
+          const detalle = error instanceof Error ? error.message : String(error);
+          Alert.alert("Historial", `No se pudieron cargar los pedidos guardados. ${detalle}`);
+        }
+      })
+      .finally(() => {
+        if (activo) setPedidosCargados(true);
+      });
+    return () => {
+      activo = false;
+    };
+  }, []);
   useEffect(() => {
     if (Platform.OS === "android")
       void NavigationBar.setVisibilityAsync("hidden");
@@ -146,7 +330,10 @@ export function AppVendedorDiseñada(): React.JSX.Element {
   const cambiarCantidad = (id: string, cambio: number): void =>
     setCantidades((actuales) => ({
       ...actuales,
-      [id]: Math.max(0, (actuales[id] ?? 0) + cambio),
+      [id]: Math.min(
+        productos.find((producto) => producto.id === id)?.stock ?? 0,
+        Math.max(0, (actuales[id] ?? 0) + cambio),
+      ),
     }));
   const opacidad = React.useRef(new Animated.Value(1)).current;
   const desplazamiento = React.useRef(new Animated.Value(0)).current;
@@ -221,6 +408,73 @@ export function AppVendedorDiseñada(): React.JSX.Element {
     setModalCliente(false);
     seleccionarVista("pedido");
   };
+  const confirmarPedido = async (): Promise<void> => {
+    if (!cliente || !pedidosCargados || !almacenamientoDisponible || guardandoPedido || total <= 0) return;
+    const productoSinStock = productosEnPedido.find(
+      (producto) => (cantidades[producto.id] ?? 0) > producto.stock,
+    );
+    if (productoSinStock) {
+      Alert.alert(
+        "Stock insuficiente",
+        `${productoSinStock.nombre}: hay ${productoSinStock.stock} unidades disponibles.`,
+      );
+      return;
+    }
+    setGuardandoPedido(true);
+    const lineas = productos
+      .filter((producto) => (cantidades[producto.id] ?? 0) > 0)
+      .map((producto) => ({
+        productoId: producto.id,
+        nombreProducto: producto.nombre,
+        cantidad: cantidades[producto.id] ?? 0,
+        precioUnitario: producto.precio,
+      }));
+    const importeTotal = lineas.reduce(
+      (suma, linea) => suma + linea.cantidad * linea.precioUnitario,
+      0,
+    );
+    const numero = pedidos.reduce(
+      (mayor, pedido) => Math.max(mayor, pedido.numero),
+      9999,
+    ) + 1;
+    const esVentaDelDueno = usuarioActivo?.rol === "dueno";
+    const porcentajeComision = esVentaDelDueno
+      ? 0
+      : PORCENTAJE_COMISION_VENDEDOR;
+    const pedido: PedidoVendedor = {
+      id: `PED-${numero}`,
+      numero,
+      fecha: new Date().toISOString(),
+      cliente: { ...cliente },
+      condicionPago,
+      lineas,
+      importeTotal,
+      porcentajeComision,
+      ganancia: esVentaDelDueno
+        ? null
+        : Math.round(importeTotal * porcentajeComision / 100),
+      usuarioId: usuarioActivo?.id ?? USUARIO_VENDEDOR.id,
+      nombreVendedor: usuarioActivo?.nombre ?? USUARIO_VENDEDOR.nombre,
+      vendidoPorDueno: esVentaDelDueno,
+    };
+    const pedidosActualizados = [pedido, ...pedidos];
+    try {
+      await AsyncStorage.setItem(
+        CLAVE_PEDIDOS_LOCALES,
+        JSON.stringify(pedidosActualizados),
+      );
+      setPedidos(pedidosActualizados);
+      setCantidades({});
+      setCliente(null);
+      setModalRemito(false);
+      seleccionarVista("confirmado");
+    } catch (error: unknown) {
+      const detalle = error instanceof Error ? error.message : String(error);
+      Alert.alert("No se guardó el pedido", `No se pudo escribir en el almacenamiento local. ${detalle}`);
+    } finally {
+      setGuardandoPedido(false);
+    }
+  };
   const selectorCategorias = (
     <Picker
       selectedValue={categoria}
@@ -244,7 +498,10 @@ export function AppVendedorDiseñada(): React.JSX.Element {
         <View style={[estilos.acceso, tema.superficie]}>
           <Text style={estilos.marca}>FONTANA DISTRIBUCIONES</Text>
           <Text style={[estilos.titulo, tema.texto]}>Ingresar a la app</Text>
-          <Text style={tema.secundario}>Código de vendedor o chofer</Text>
+          <Text style={tema.secundario}>Código de acceso</Text>
+          <Text style={tema.secundario}>
+            Martín · pass1234  |  Fabio (dueño) · password
+          </Text>
           <TextInput
             secureTextEntry
             value={codigo}
@@ -256,16 +513,24 @@ export function AppVendedorDiseñada(): React.JSX.Element {
           <Pressable
             style={estilos.boton}
             onPress={() => {
-              const valido = codigo === "pass1234";
-              setError(!valido);
-              if (valido) setAutenticado(true);
+              const usuario =
+                codigo === "pass1234"
+                  ? USUARIO_VENDEDOR
+                  : codigo === "password"
+                    ? USUARIO_DUENO
+                    : null;
+              setError(usuario === null);
+              if (usuario) {
+                setUsuarioActivo(usuario);
+                setAutenticado(true);
+              }
             }}
           >
             <Text style={estilos.botonTexto}>Ingresar</Text>
           </Pressable>
           {error && (
             <Text style={estilos.error}>
-              Código incorrecto. Probá con pass1234.
+              Código incorrecto. Probá con pass1234 o password.
             </Text>
           )}
         </View>
@@ -284,7 +549,9 @@ export function AppVendedorDiseñada(): React.JSX.Element {
         <View style={estilos.encabezado}>
           <View>
             <Text style={estilos.marca}>FONTANA DISTRIBUCIONES</Text>
-            <Text style={tema.secundario}>Vendedor · Martín</Text>
+            <Text style={tema.secundario}>
+              {usuarioActivo?.rol === "dueno" ? "Dueño" : "Vendedor"} · {usuarioActivo?.nombre}
+            </Text>
           </View>
           <Animated.View
             style={[
@@ -341,11 +608,19 @@ export function AppVendedorDiseñada(): React.JSX.Element {
               Resumen de rentabilidad
             </Text>
             <View style={[estilos.resumen, tema.superficie]}>
-              <Resumen numero="4" etiqueta="Pedidos del día" tema={tema} />
-              <Resumen numero="12" etiqueta="Pedidos del mes" tema={tema} />
+              <Resumen numero={String(pedidosDelDia.length)} etiqueta="Pedidos del día" tema={tema} />
+              <Resumen numero={String(pedidosDelMes.length)} etiqueta="Pedidos del mes" tema={tema} />
               <Resumen
-                numero="$184.600"
-                etiqueta="Ganancia total"
+                numero={
+                  usuarioActivo?.rol === "dueno"
+                    ? "—"
+                    : dinero(gananciaTotalVendedor)
+                }
+                etiqueta={
+                  usuarioActivo?.rol === "dueno"
+                    ? "Ganancia neta (requiere costos)"
+                    : "Comisiones ganadas"
+                }
                 tema={tema}
               />
             </View>
@@ -366,13 +641,35 @@ export function AppVendedorDiseñada(): React.JSX.Element {
               style={[estilos.input, tema.input]}
             />
             {selectorCategorias}
-            {productosFiltrados.map((producto) => (
+            <Text style={tema.secundario}>
+              {productosFiltrados.length} productos · página {paginaPreciosVisible + 1} de {totalPaginasPrecios}
+            </Text>
+            {productosPaginadosPrecios.map((producto) => (
               <ProductoPrecio
                 key={producto.id}
                 producto={producto}
                 tema={tema}
               />
             ))}
+            <View style={[estilos.paginacion, tema.superficie]}>
+              <Pressable
+                disabled={paginaPreciosVisible === 0}
+                style={[estilos.botonPagina, paginaPreciosVisible === 0 && estilos.deshabilitado]}
+                onPress={() => setPaginaPrecios((pagina) => Math.max(0, pagina - 1))}
+              >
+                <Text style={estilos.botonPaginaTexto}>‹ Anterior</Text>
+              </Pressable>
+              <Text style={tema.secundario}>
+                Página {paginaPreciosVisible + 1} de {totalPaginasPrecios}
+              </Text>
+              <Pressable
+                disabled={paginaPreciosVisible >= totalPaginasPrecios - 1}
+                style={[estilos.botonPagina, paginaPreciosVisible >= totalPaginasPrecios - 1 && estilos.deshabilitado]}
+                onPress={() => setPaginaPrecios((pagina) => Math.min(totalPaginasPrecios - 1, pagina + 1))}
+              >
+                <Text style={estilos.botonPaginaTexto}>Siguiente ›</Text>
+              </Pressable>
+            </View>
           </>
         )}
         {vista === "pedido" && (
@@ -517,7 +814,7 @@ export function AppVendedorDiseñada(): React.JSX.Element {
               style={[estilos.input, tema.input]}
             />
             {selectorCategorias}
-            {productosFiltrados.map((producto) => (
+            {productosPaginados.map((producto) => (
               <View
                 key={producto.id}
                 style={[estilos.productoFila, tema.superficie]}
@@ -527,7 +824,7 @@ export function AppVendedorDiseñada(): React.JSX.Element {
                     {producto.nombre}
                   </Text>
                   <Text style={tema.secundario}>
-                    {producto.categoria} · {dinero(producto.precio)}
+                    {producto.categoria} · {dinero(producto.precio)} · Disponible: {producto.stock}
                   </Text>
                 </View>
                 <View style={estilos.controles}>
@@ -541,7 +838,11 @@ export function AppVendedorDiseñada(): React.JSX.Element {
                     {cantidades[producto.id] ?? 0}
                   </Text>
                   <Pressable
-                    style={estilos.controlGrande}
+                    disabled={(cantidades[producto.id] ?? 0) >= producto.stock}
+                    style={[
+                      estilos.controlGrande,
+                      (cantidades[producto.id] ?? 0) >= producto.stock && estilos.deshabilitado,
+                    ]}
                     onPress={() => cambiarCantidad(producto.id, 1)}
                   >
                     <Text style={estilos.controlTexto}>＋</Text>
@@ -549,6 +850,47 @@ export function AppVendedorDiseñada(): React.JSX.Element {
                 </View>
               </View>
             ))}
+            <View style={[estilos.paginacion, tema.superficie]}>
+              <Pressable
+                disabled={paginaProductosVisible === 0}
+                style={[estilos.botonPagina, paginaProductosVisible === 0 && estilos.deshabilitado]}
+                onPress={() => setPaginaProductos((pagina) => Math.max(0, pagina - 1))}
+              >
+                <Text style={estilos.botonPaginaTexto}>‹ Anterior</Text>
+              </Pressable>
+              <Text style={tema.secundario}>
+                Página {paginaProductosVisible + 1} de {totalPaginasProductos}
+              </Text>
+              <Pressable
+                disabled={paginaProductosVisible >= totalPaginasProductos - 1}
+                style={[estilos.botonPagina, paginaProductosVisible >= totalPaginasProductos - 1 && estilos.deshabilitado]}
+                onPress={() => setPaginaProductos((pagina) => Math.min(totalPaginasProductos - 1, pagina + 1))}
+              >
+                <Text style={estilos.botonPaginaTexto}>Siguiente ›</Text>
+              </Pressable>
+            </View>
+            <View style={[estilos.resumenPedido, tema.superficie]}>
+              <Text style={[estilos.producto, tema.texto]}>Resumen del pedido</Text>
+              {productosEnPedido.length === 0 ? (
+                <Text style={tema.secundario}>Los productos que agregues aparecerán aquí.</Text>
+              ) : (
+                productosEnPedido.map((producto) => {
+                  const cantidad = cantidades[producto.id] ?? 0;
+                  return (
+                    <View key={producto.id} style={estilos.lineaResumen}>
+                      <Text style={[estilos.flexible, tema.texto]}>
+                        {cantidad} × {producto.nombre}
+                      </Text>
+                      <Text style={tema.texto}>{dinero(cantidad * producto.precio)}</Text>
+                    </View>
+                  );
+                })
+              )}
+              <View style={estilos.lineaResumen}>
+                <Text style={[estilos.producto, tema.texto]}>Total</Text>
+                <Text style={[estilos.producto, tema.texto]}>{dinero(total)}</Text>
+              </View>
+            </View>
             <Pressable
               disabled={!cliente || total === 0}
               style={[
@@ -615,15 +957,18 @@ export function AppVendedorDiseñada(): React.JSX.Element {
               <Text style={tema.enlace}>Ver formato de impresión</Text>
             </Pressable>
             <Pressable
-              style={estilos.boton}
+              disabled={!pedidosCargados || !almacenamientoDisponible || guardandoPedido}
+              style={[
+                estilos.boton,
+                (!pedidosCargados || !almacenamientoDisponible || guardandoPedido) && estilos.deshabilitado,
+              ]}
               onPress={() => {
-                setCantidades({});
-                setCliente(null);
-                setModalRemito(false);
-                seleccionarVista("confirmado");
+                void confirmarPedido();
               }}
             >
-              <Text style={estilos.botonTexto}>Confirmar pedido</Text>
+              <Text style={estilos.botonTexto}>
+                {guardandoPedido ? "Guardando pedido…" : "Confirmar pedido"}
+              </Text>
             </Pressable>
           </>
         )}
@@ -651,59 +996,64 @@ export function AppVendedorDiseñada(): React.JSX.Element {
               volver={() => seleccionarVista("inicio")}
               tema={tema}
             />
-            {[
-              {
-                texto: "#10001 · Avicola 912 · $15.400",
-                porcentaje: "10%",
-                ganancia: "$1.538",
-              },
-              {
-                texto: "#10000 · Tickets bajos · $48.600",
-                porcentaje: "10%",
-                ganancia: "$4.860",
-              },
-            ].map((pedido) => (
-              <Pressable
-                key={pedido.texto}
-                style={[estilos.historial, tema.superficie]}
-                onPress={() =>
-                  setDetalleAbierto(
-                    detalleAbierto === pedido.texto ? null : pedido.texto,
-                  )
-                }
-              >
-                <View style={estilos.historialCabecera}>
-                  <Text
-                    style={[estilos.producto, tema.texto, estilos.flexible]}
-                    numberOfLines={2}
-                  >
-                    {pedido.texto}
-                  </Text>
-                  <Text style={tema.enlace}>
-                    {detalleAbierto === pedido.texto ? "Cerrar" : "Detalle"}
-                  </Text>
-                </View>
-                {detalleAbierto === pedido.texto && (
-                  <View style={estilos.detalle}>
-                    <Text style={tema.secundario}>
-                      2 × Aceite Cocinero 900cc · $6.380
-                    </Text>
-                    <Text style={tema.secundario}>
-                      5 × Crutons Minitostaditas · $9.000
-                    </Text>
-                    <Text style={[estilos.producto, tema.texto]}>
-                      Total vendido: $15.400
-                    </Text>
-                    <Text style={[estilos.producto, tema.texto]}>
-                      Comisión: {pedido.porcentaje}
-                    </Text>
-                    <Text style={[estilos.producto, tema.enlace]}>
-                      Ganancia del pedido: {pedido.ganancia}
-                    </Text>
+            {!pedidosCargados ? (
+              <Text style={tema.secundario}>Cargando pedidos guardados…</Text>
+            ) : pedidosDelUsuario.length === 0 ? (
+              <View style={[estilos.historial, tema.superficie]}>
+                <Text style={[estilos.producto, tema.texto]}>Todavía no hay pedidos</Text>
+                <Text style={tema.secundario}>
+                  Los pedidos que confirmes aparecerán aquí, incluso después de cerrar y volver a abrir la app.
+                </Text>
+              </View>
+            ) : pedidosDelUsuario.map((pedido) => {
+              const abierto = detalleAbierto === pedido.id;
+              return (
+                <Pressable
+                  key={pedido.id}
+                  style={[estilos.historial, tema.superficie]}
+                  onPress={() => setDetalleAbierto(abierto ? null : pedido.id)}
+                >
+                  <View style={estilos.historialCabecera}>
+                    <View style={estilos.flexible}>
+                      <Text style={[estilos.producto, tema.texto]} numberOfLines={2}>
+                        #{pedido.numero} · {pedido.cliente.nombre}
+                      </Text>
+                      <Text style={tema.secundario}>
+                        {new Date(pedido.fecha).toLocaleDateString("es-AR")} · {dinero(pedido.importeTotal)}
+                      </Text>
+                    </View>
+                    <Text style={tema.enlace}>{abierto ? "Cerrar" : "Detalle"}</Text>
                   </View>
-                )}
-              </Pressable>
-            ))}
+                  {abierto && (
+                    <View style={estilos.detalle}>
+                      {pedido.lineas.map((linea) => (
+                        <Text key={linea.productoId} style={tema.secundario}>
+                          {linea.cantidad} × {linea.nombreProducto} · {dinero(linea.cantidad * linea.precioUnitario)}
+                        </Text>
+                      ))}
+                      <Text style={[estilos.producto, tema.texto]}>
+                        Importe total: {dinero(pedido.importeTotal)}
+                      </Text>
+                      <Text style={tema.secundario}>
+                        Condición de pago: {etiquetaCondicion(pedido.condicionPago)}
+                      </Text>
+                      <Text style={tema.secundario}>
+                        Comisión aplicada: {pedido.vendidoPorDueno ? "No aplica (venta del dueño)" : `${pedido.porcentajeComision}%`}
+                      </Text>
+                      {pedido.ganancia === null ? (
+                        <Text style={tema.secundario}>
+                          Ganancia neta no calculada: faltan los costos de lote en este catálogo de prueba.
+                        </Text>
+                      ) : (
+                        <Text style={[estilos.producto, tema.enlace]}>
+                          Ganancia del pedido: {dinero(pedido.ganancia)}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                </Pressable>
+              );
+            })}
           </>
         )}
       </Animated.ScrollView>
@@ -1084,7 +1434,7 @@ function ProductoPrecio({
       <View style={estilos.flexible}>
         <Text style={[estilos.producto, tema.texto]}>{producto.nombre}</Text>
         <Text style={tema.secundario}>
-          {producto.id} · {producto.categoria}
+          {producto.id} · {producto.categoria} · Stock disponible: {producto.stock}
         </Text>
       </View>
       <Text style={[estilos.producto, tema.texto]}>
@@ -1244,6 +1594,28 @@ const estilos = StyleSheet.create({
   },
   producto: { fontWeight: "800" },
   flexible: { flex: 1 },
+  paginacion: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  botonPagina: {
+    paddingVertical: 9,
+    paddingHorizontal: 10,
+    borderRadius: 9,
+    backgroundColor: "#176b43",
+  },
+  botonPaginaTexto: { color: "#fff", fontSize: 12, fontWeight: "800" },
+  resumenPedido: { padding: 14, borderWidth: 1, borderRadius: 14, gap: 9 },
+  lineaResumen: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 8,
+  },
   controles: { flexDirection: "row", alignItems: "center", gap: 10 },
   controlGrande: {
     width: 44,

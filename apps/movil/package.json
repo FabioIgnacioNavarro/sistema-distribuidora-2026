@@ -13,6 +13,7 @@
     "@distribuidora/tipos-compartidos": "workspace:*",
     "@distribuidora/utilidades": "workspace:*",
     "@nozbe/watermelondb": "^0.27.1",
+    "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-picker/picker": "2.11.4",
     "expo": "~58.0.19",
     "expo-constants": "~58.0.13",
@@ -21,8 +22,10 @@
     "expo-router": "~58.0.26",
     "expo-status-bar": "~58.0.4",
     "react": "19.3.0",
+    "react-dom": "19.3.0",
     "react-native": "0.88.0",
     "react-native-safe-area-context": "~5.10.1",
+    "react-native-web": "^0.21.4",
     "zustand": "^4.5.0"
   },
   "devDependencies": {
