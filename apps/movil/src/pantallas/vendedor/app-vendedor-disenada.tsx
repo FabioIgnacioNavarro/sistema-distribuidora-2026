@@ -698,7 +698,7 @@ export function AppVendedorDiseñada(): React.JSX.Element {
                       Comisión: {pedido.porcentaje}
                     </Text>
                     <Text style={[estilos.producto, tema.enlace]}>
-                      Ganancia estimada: {pedido.ganancia}
+                      Ganancia del pedido: {pedido.ganancia}
                     </Text>
                   </View>
                 )}

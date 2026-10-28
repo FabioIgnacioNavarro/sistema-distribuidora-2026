@@ -50,6 +50,7 @@ const pedidos = [
     cliente: "Avicola 912",
     total: 15400,
     cobrado: 0,
+    ganancia: 1538,
     condicionPago: "Cuenta corriente · 7 días",
     estadoCobro: "Sin cobrar",
     cobrado: 0,
@@ -65,6 +66,7 @@ const pedidos = [
     cliente: "Tickets bajos",
     total: 48600,
     cobrado: 48600,
+    ganancia: 4860,
     condicionPago: "Transferencia",
     estadoCobro: "Cobrado totalmente",
     cobrado: 48600,
@@ -166,7 +168,7 @@ function renderHistorial() {
   $("#historial-pedidos").innerHTML = pedidos
     .map(
       (pedido) =>
-        `<details class="pedido-anterior"><summary><div><strong>#${pedido.numero}</strong><small>${pedido.cliente} · ${dinero(pedido.total)}</small></div><span class="ver-detalle">Ver detalle</span></summary><div class="detalle-historial">${pedido.detalle.map((linea) => `<div><span>${linea.cantidad} × ${linea.producto}</span><strong>${dinero(linea.importe)}</strong></div>`).join("")}<div class="total-historial"><span>Total vendido</span><strong>${dinero(pedido.total)}</strong></div><div><span>Condición</span><strong>${pedido.condicionPago}</strong></div><div><span>Estado de cobro</span><strong>${pedido.estadoCobro}</strong></div><div><span>Saldo pendiente</span><strong>${dinero(pedido.total - pedido.cobrado)}</strong></div></div></details>`,
+        `<details class="pedido-anterior"><summary><div><strong>#${pedido.numero}</strong><small>${pedido.cliente} · ${dinero(pedido.total)}</small></div><span class="ver-detalle">Ver detalle</span></summary><div class="detalle-historial">${pedido.detalle.map((linea) => `<div><span>${linea.cantidad} × ${linea.producto}</span><strong>${dinero(linea.importe)}</strong></div>`).join("")}<div class="total-historial"><span>Total vendido</span><strong>${dinero(pedido.total)}</strong></div><div><span>Ganancia del pedido</span><strong>${dinero(pedido.ganancia)}</strong></div><div><span>Condición</span><strong>${pedido.condicionPago}</strong></div><div><span>Estado de cobro</span><strong>${pedido.estadoCobro}</strong></div><div><span>Saldo pendiente</span><strong>${dinero(pedido.total - pedido.cobrado)}</strong></div></div></details>`,
     )
     .join("");
 }

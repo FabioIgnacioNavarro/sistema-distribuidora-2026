@@ -40,6 +40,8 @@
 
 **Estado de cobro:** El cobro se gestiona de forma independiente al estado logístico. Un pedido puede estar `sin_cobrar`, `cobrado_parcialmente` o `cobrado_totalmente`. El estado se deriva del total del pedido y de la suma de cobranzas confirmadas; nunca se modifica manualmente sin registrar el movimiento correspondiente. Una cobranza no puede superar el saldo pendiente.
 
+**Ganancia independiente de la cobranza:** La ganancia del pedido se calcula al registrar la operación comercial: importe total menos costos de los lotes utilizados y comisiones aplicables. La ganancia no se reduce ni queda condicionada por el estado de cobro. `ImporteTotalPedido`, `GananciaTotalPedido`, `ImporteCobrado` y `SaldoPendiente` son datos distintos: el saldo pendiente indica dinero aún no ingresado, no una pérdida ni una disminución de la rentabilidad calculada.
+
 **Historial de cobranzas:** Un pedido puede tener varias cobranzas. Cada cobranza conserva importe, fecha, medio de pago, observación y persona que la registró. El Administrador puede consultar un mini historial de cobranzas dentro del detalle del pedido y registrar pagos parciales o cancelar una cobranza según las reglas de auditoría. Las cobranzas confirmadas quedan auditadas y no se eliminan físicamente.
 
 **Clientes en la base de datos:** Al crear un pedido, el vendedor puede seleccionar un cliente existente o registrar uno nuevo en el momento. Los clientes nuevos se guardan automáticamente en la base de datos para futuras ventas.

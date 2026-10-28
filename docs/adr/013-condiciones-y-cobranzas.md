@@ -14,10 +14,13 @@ El pedido conservará una condición de pago y, cuando corresponda, una fecha de
 
 Las cobranzas se modelarán como registros propios asociados al pedido. Cada registro conservará importe, fecha, medio de pago, persona registrante y observación. El saldo y el estado de cobro se derivarán de la suma de cobranzas confirmadas contra el total congelado del pedido.
 
+La cobranza no modifica la ganancia del pedido. La ganancia se calcula por la diferencia entre precio de venta, costos de lotes y comisiones al registrar la operación; el importe cobrado y el saldo pendiente representan liquidez, no rentabilidad.
+
 ## Consecuencias
 
 - El vendedor debe seleccionar la condición al crear el pedido y verla en el remito.
 - El Administrador puede registrar cobranzas parciales y consultar su historial.
+- La ganancia permanece visible y estable aunque el pedido esté sin cobrar o cobrado parcialmente.
 - Ventas y rentabilidad puede mostrar cobrado contra pendiente en un gráfico de torta.
 - Pedidos y Entrega de pedidos mostrarán ambos estados sin mezclarlos.
 - Las condiciones desactivadas no afectan pedidos históricos.
