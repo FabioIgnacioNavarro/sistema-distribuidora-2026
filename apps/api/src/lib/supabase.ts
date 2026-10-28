@@ -1,11 +1,18 @@
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@distribuidora/tipos-compartidos';
+import { config } from "dotenv";
+import { resolve } from "node:path";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@distribuidora/tipos-compartidos";
+
+config();
+config({ path: resolve(process.cwd(), "../../.env") });
 
 const url = process.env.SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!url || !key) {
-  throw new Error('Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en variables de entorno');
+  throw new Error(
+    "Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en variables de entorno",
+  );
 }
 
 export const supabase = createClient<Database>(url, key);
