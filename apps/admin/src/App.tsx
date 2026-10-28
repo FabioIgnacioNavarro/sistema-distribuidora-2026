@@ -269,14 +269,18 @@ export default function App(): JSX.Element {
               <ListaPrecios productos={productos} categorias={categorias} />
             )}
             {vista === "productos" && (
-              <TablaProductos productos={productos} categorias={categorias} />
+              <TablaProductos
+                productos={productos}
+                lotes={lotes}
+                categorias={categorias}
+                lotesAbiertos={lotesAbiertos}
+                setLotesAbiertos={setLotesAbiertos}
+              />
             )}
             {vista === "lotes" && (
               <TablaLotes
                 productos={productos}
                 lotes={lotes}
-                lotesAbiertos={lotesAbiertos}
-                setLotesAbiertos={setLotesAbiertos}
                 navegar={navegar}
                 categorias={categorias}
               />
@@ -556,10 +560,16 @@ function Filtros({
 
 function TablaProductos({
   productos,
+  lotes,
   categorias,
+  lotesAbiertos,
+  setLotesAbiertos,
 }: {
   productos: ProductoInventario[];
+  lotes: LoteDetalle[];
   categorias: string[];
+  lotesAbiertos: Set<string>;
+  setLotesAbiertos: (valor: Set<string>) => void;
 }): JSX.Element {
   const [busqueda, setBusqueda] = useState("");
   const [categoria, setCategoria] = useState("");
@@ -570,6 +580,17 @@ function TablaProductos({
         .includes(busqueda.toLowerCase()) &&
       (!categoria || producto.categoria === categoria),
   );
+  const alternar = (id: string): void => {
+    const siguiente = new Set(lotesAbiertos);
+    siguiente.has(id) ? siguiente.delete(id) : siguiente.add(id);
+    setLotesAbiertos(siguiente);
+  };
+  const lotesPorProducto = new Map<string, LoteDetalle[]>();
+  for (const lote of lotes) {
+    const delProducto = lotesPorProducto.get(lote.productoId) ?? [];
+    delProducto.push(lote);
+    lotesPorProducto.set(lote.productoId, delProducto);
+  }
   return (
     <section className="pagina">
       <div className="pagina__encabezado">
@@ -577,8 +598,8 @@ function TablaProductos({
           <p className="eyebrow">Operaciones / Stock</p>
           <h1>Stock de productos</h1>
           <p className="subtitulo">
-            Stock actual por producto. El detalle de compras se consulta en
-            Lotes.
+            Stock consolidado por producto y detalle de los lotes que lo
+            componen.
           </p>
         </div>
       </div>
@@ -597,26 +618,98 @@ function TablaProductos({
               <th>Categoría</th>
               <th>Precio público</th>
               <th>Stock actual</th>
+              <th>Lotes</th>
             </tr>
           </thead>
           <tbody>
-            {lista.map((producto) => (
-              <tr key={producto.id}>
-                <td>
-                  <strong>{producto.sku}</strong>
-                </td>
-                <td>{producto.nombre}</td>
-                <td>
-                  <span className="etiqueta-categoria">
-                    {producto.categoria}
-                  </span>
-                </td>
-                <td>{dinero(producto.precioVenta)}</td>
-                <td>
-                  <strong>{producto.stockTotal}</strong>
-                </td>
-              </tr>
-            ))}
+            {lista.map((producto) => {
+              const propios = lotesPorProducto.get(producto.id) ?? [];
+              const abierto = lotesAbiertos.has(producto.id);
+              return (
+                <Fragment key={producto.id}>
+                  <tr
+                    className={
+                      abierto
+                        ? "fila-producto fila-producto--abierta"
+                        : "fila-producto"
+                    }
+                  >
+                    <td>
+                      <strong>{producto.sku}</strong>
+                    </td>
+                    <td>{producto.nombre}</td>
+                    <td>
+                      <span className="etiqueta-categoria">
+                        {producto.categoria}
+                      </span>
+                    </td>
+                    <td>{dinero(producto.precioVenta)}</td>
+                    <td>
+                      <strong>{producto.stockTotal} u.</strong>
+                    </td>
+                    <td>
+                      <button
+                        className="enlace"
+                        aria-expanded={abierto}
+                        onClick={() => alternar(producto.id)}
+                      >
+                        {abierto ? "Ocultar" : `Ver ${propios.length}`}
+                      </button>
+                    </td>
+                  </tr>
+                  {abierto &&
+                    (propios.length > 0 ? (
+                      propios.map((lote) => (
+                        <tr className="fila-lote" key={lote.id}>
+                          <td colSpan={6}>
+                            <div className="detalle-lote-stock">
+                              <span>
+                                <small>Lote</small>
+                                <strong>{lote.codigoLote}</strong>
+                              </span>
+                              <span>
+                                <small>Factura / proveedor</small>
+                                <strong>
+                                  {lote.numeroFactura ?? "Sin factura"} ·{" "}
+                                  {lote.proveedor ?? "Proveedor sin nombre"}
+                                </strong>
+                              </span>
+                              <span>
+                                <small>Costo unitario</small>
+                                <strong>{dinero(lote.costoUnitario)}</strong>
+                              </span>
+                              <span>
+                                <small>Cantidad inicial / remanente</small>
+                                <strong>
+                                  {lote.cantidadOriginal} /{" "}
+                                  {lote.cantidadRestante} u.
+                                </strong>
+                              </span>
+                              <span>
+                                <small>Vencimiento</small>
+                                <strong>
+                                  {lote.fechaVencimiento
+                                    ? fechaVisible(lote.fechaVencimiento)
+                                    : "Sin vencimiento"}
+                                </strong>
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr
+                        className="fila-lote"
+                        key={`${producto.id}-sin-lotes`}
+                      >
+                        <td colSpan={6}>
+                          Este producto todavía no tiene lotes registrados.
+                        </td>
+                      </tr>
+                    ))}
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
         {lista.length === 0 && (
@@ -630,32 +723,29 @@ function TablaProductos({
 function TablaLotes({
   productos,
   lotes,
-  lotesAbiertos,
-  setLotesAbiertos,
   navegar,
   categorias,
 }: {
   productos: ProductoInventario[];
   lotes: LoteDetalle[];
-  lotesAbiertos: Set<string>;
-  setLotesAbiertos: (valor: Set<string>) => void;
   navegar: (vista: Vista) => void;
   categorias: string[];
 }): JSX.Element {
   const [busqueda, setBusqueda] = useState("");
   const [categoria, setCategoria] = useState("");
-  const lista = productos.filter(
-    (producto) =>
-      `${producto.sku} ${producto.nombre}`
-        .toLowerCase()
-        .includes(busqueda.toLowerCase()) &&
-      (!categoria || producto.categoria === categoria),
+  const productosPorId = new Map(
+    productos.map((producto) => [producto.id, producto]),
   );
-  const alternar = (id: string): void => {
-    const siguiente = new Set(lotesAbiertos);
-    siguiente.has(id) ? siguiente.delete(id) : siguiente.add(id);
-    setLotesAbiertos(siguiente);
-  };
+  const termino = busqueda.trim().toLowerCase();
+  const lista = lotes.filter((lote) => {
+    const producto = productosPorId.get(lote.productoId);
+    const texto =
+      `${lote.productoSku} ${lote.productoNombre} ${lote.codigoLote} ${lote.numeroFactura ?? ""} ${lote.proveedor ?? ""}`.toLowerCase();
+    return (
+      (!categoria || producto?.categoria === categoria) &&
+      texto.includes(termino)
+    );
+  });
   return (
     <section className="pagina">
       <div className="pagina__encabezado">
@@ -663,7 +753,8 @@ function TablaLotes({
           <p className="eyebrow">Operaciones / Stock / Lotes</p>
           <h1>Lotes</h1>
           <p className="subtitulo">
-            Compras recibidas, remanente disponible y costo por lote.
+            Cada fila representa un lote recibido, con factura, proveedor, costo
+            y cantidades.
           </p>
         </div>
         <button
@@ -683,117 +774,65 @@ function TablaLotes({
         <table>
           <thead>
             <tr>
-              <th>Producto</th>
+              <th>Lote / producto</th>
               <th>Categoría</th>
-              <th>Stock actual</th>
-              <th>Lotes registrados</th>
-              <th>Estado</th>
+              <th>Factura / proveedor</th>
+              <th>Fecha de ingreso</th>
+              <th>Costo unitario</th>
+              <th>Cantidad inicial</th>
+              <th>Remanente</th>
+              <th>Vencimiento</th>
             </tr>
           </thead>
           <tbody>
-            {lista.map((producto) => {
-              const propios = lotes.filter(
-                (lote) => lote.productoId === producto.id,
-              );
-              const abierto = lotesAbiertos.has(producto.id);
+            {lista.map((lote) => {
+              const producto = productosPorId.get(lote.productoId);
+              const porcentajeRestante =
+                lote.cantidadOriginal > 0
+                  ? (lote.cantidadRestante / lote.cantidadOriginal) * 100
+                  : 0;
               return (
-                <Fragment key={producto.id}>
-                  <tr
-                    className={
-                      abierto
-                        ? "fila-producto fila-producto--abierta"
-                        : "fila-producto"
-                    }
-                  >
-                    <td>
-                      <div className="producto-celda">
-                        <button
-                          className="expansor"
-                          onClick={() => alternar(producto.id)}
-                          aria-expanded={abierto}
-                        >
-                          {abierto ? "⌄" : "›"}
-                        </button>
-                        <span>
-                          <strong>{producto.nombre}</strong>
-                          <small>{producto.sku}</small>
-                        </span>
-                      </div>
-                    </td>
-                    <td>
-                      <span className="etiqueta-categoria">
-                        {producto.categoria}
-                      </span>
-                    </td>
-                    <td>
-                      <strong>{producto.stockTotal} u.</strong>
-                    </td>
-                    <td>{propios.length}</td>
-                    <td>
-                      <span
-                        className={
-                          producto.stockTotal > 0
-                            ? "estado estado--activo"
-                            : "estado estado--agotado"
-                        }
-                      >
-                        {producto.stockTotal > 0 ? "Disponible" : "Agotado"}
-                      </span>
-                    </td>
-                  </tr>
-                  {abierto &&
-                    propios.map((lote) => (
-                      <tr className="fila-lote" key={lote.id}>
-                        <td>
-                          <span className="lote-nombre">
-                            ↳ <strong>{lote.codigoLote}</strong>
-                            <small>
-                              {lote.numeroFactura
-                                ? `Factura ${lote.numeroFactura} · ${lote.proveedor ?? ""}`
-                                : "Compra registrada"}
-                            </small>
-                          </span>
-                        </td>
-                        <td>Costo: {dinero(lote.costoUnitario)}</td>
-                        <td>
-                          <strong>
-                            {lote.cantidadRestante} / {lote.cantidadOriginal} u.
-                          </strong>
-                          <div className="barra-stock barra-stock--lote">
-                            <i
-                              style={{
-                                width: `${lote.cantidadOriginal ? (lote.cantidadRestante / lote.cantidadOriginal) * 100 : 0}%`,
-                              }}
-                            />
-                          </div>
-                        </td>
-                        <td>
-                          {lote.fechaVencimiento
-                            ? fechaVisible(lote.fechaVencimiento)
-                            : "Sin vencimiento"}
-                        </td>
-                        <td>
-                          <span
-                            className={
-                              lote.cantidadRestante > 0
-                                ? "estado estado--lote"
-                                : "estado estado--agotado"
-                            }
-                          >
-                            {lote.cantidadRestante > 0
-                              ? "Disponible"
-                              : "Agotado"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                </Fragment>
+                <tr key={lote.id}>
+                  <td>
+                    <strong>{lote.codigoLote}</strong>
+                    <small className="celda-secundaria">
+                      {lote.productoSku} · {lote.productoNombre}
+                    </small>
+                  </td>
+                  <td>
+                    <span className="etiqueta-categoria">
+                      {producto?.categoria ?? "Sin categoría"}
+                    </span>
+                  </td>
+                  <td>
+                    {lote.numeroFactura ?? "—"}
+                    <small className="celda-secundaria">
+                      {lote.proveedor ?? "Proveedor sin nombre"}
+                    </small>
+                  </td>
+                  <td>
+                    {lote.recibidoEn ? fechaVisible(lote.recibidoEn) : "—"}
+                  </td>
+                  <td>{dinero(lote.costoUnitario)}</td>
+                  <td>{lote.cantidadOriginal} u.</td>
+                  <td className="stock-celda">
+                    <strong>{lote.cantidadRestante} u.</strong>
+                    <div className="barra-stock barra-stock--lote">
+                      <i style={{ width: `${porcentajeRestante}%` }} />
+                    </div>
+                  </td>
+                  <td>
+                    {lote.fechaVencimiento
+                      ? fechaVisible(lote.fechaVencimiento)
+                      : "—"}
+                  </td>
+                </tr>
               );
             })}
           </tbody>
         </table>
         {lista.length === 0 && (
-          <EstadoVacio texto="No hay productos para mostrar." />
+          <EstadoVacio texto="No hay lotes que coincidan con la búsqueda." />
         )}
       </div>
     </section>

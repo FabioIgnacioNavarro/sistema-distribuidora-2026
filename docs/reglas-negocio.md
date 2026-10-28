@@ -6,7 +6,7 @@
 
 **Lotes:** Los lotes contendrán: los datos del proveedor, fecha, monto total. Cada detalle de compra tendrá: nombre del producto, cantidad, precio unitario. El descuento de stock al vender sigue siempre FIFO (lote más antiguo primero). Esta lógica es automática.
 
-**Control de stock:** Cada tipo de producto tiene una cantidad en stock, nombre, código de producto (SKU), y categoría. También está la posibilidad de controlar los lotes (compras) existentes tanto en la actualidad como histórico. El stock visible en lista de precios es un solo número por producto; el detalle por lote se ve en Stock → Lotes.
+**Control de stock:** Cada tipo de producto tiene una cantidad en stock, nombre, código de producto (SKU), y categoría. La vista **Stock de productos** muestra una fila por producto con el stock consolidado y un desplegable con los lotes que lo componen. La vista **Lotes** es un listado independiente con una fila por lote y sus datos de compra (factura, proveedor, costo, cantidades y vencimiento). La lista de precios muestra un único total por producto.
 
 **Validación de stock:** Al intentar confirmar un pedido, si el stock disponible es insuficiente, la app muestra error bloqueante y no permite confirmar. No se permite stock negativo en V1.
 

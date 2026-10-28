@@ -45,5 +45,12 @@ button { cursor: pointer; }
 .modal-reinicio form > input { min-height: 44px; padding: 10px 12px; color: inherit; border: 1px solid #dce6dd; border-radius: 9px; background: #fff; }
 .app--oscura .modal-reinicio form > input { border-color: var(--borde); background: var(--superficie-2); }
 .modal-reinicio .formulario-acciones { justify-content: flex-end; }
+.celda-secundaria { display: block; margin-top: 4px; color: #819087; font-size: 11px; }
+.app--oscura .celda-secundaria { color: #a7b8ab; }
+.detalle-lote-stock { display: grid; grid-template-columns: repeat(5, minmax(130px, 1fr)); gap: 18px; padding: 7px 12px 7px 36px; }
+.detalle-lote-stock span { display: grid; gap: 5px; }
+.detalle-lote-stock small { color: #839189; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }
+.detalle-lote-stock strong { color: #536158; font-size: 12px; }
+.app--oscura .detalle-lote-stock strong { color: #d4e0d6; }
 .aviso-error { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 20px 42px 0; padding: 13px 16px; color: #842e2e; border: 1px solid #e8bcbc; border-radius: 10px; background: #fff0f0; font-size: 13px; }.aviso-error button { color: inherit; border: 0; background: transparent; font-weight: 800; }.app--oscura .aviso-error { color: #ffcaca; border-color: #744343; background: #392323; }.formulario-acciones { align-items: center; justify-content: space-between; }.formulario-acciones strong { margin-right: auto; font-size: 15px; }.boton:disabled, .accion-tabla:disabled { cursor: not-allowed; opacity: .5; }.detalle-compra { padding: 8px 12px; }.detalle-compra ul { margin: 10px 0 0; padding-left: 20px; color: #718077; line-height: 1.8; }.app--oscura .detalle-compra ul { color: #bdcbbf; }
 .lineas-factura__encabezados { display: grid; grid-template-columns: 2fr .7fr .9fr 1fr auto; gap: 9px; color: #839189; font-size: 10px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }.lineas-factura__encabezados span { min-width: 0; }.campo-moneda { display: flex; min-height: 42px; align-items: center; padding-left: 11px; color: #718077; border: 1px solid #dce6dd; border-radius: 9px; background: #fff; }.campo-moneda > span { font-size: 14px; font-weight: 800; }.linea-factura .campo-moneda input { min-height: 40px; padding-left: 7px; border: 0; background: transparent; }.app--oscura .campo-moneda { color: #c5d3c8; border-color: var(--borde); background: var(--superficie-2); }.app--oscura .linea-factura .campo-moneda input { background: transparent; }
