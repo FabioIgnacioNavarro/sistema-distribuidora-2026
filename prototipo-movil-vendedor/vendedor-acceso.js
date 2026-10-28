@@ -23,6 +23,26 @@ const productos = [
     categoria: "Almacén",
     precio: 600,
   },
+  { id: "ALI-046.1", nombre: "Fideo Santa Isabel 500g Mostachol", categoria: "Almacén", precio: 600 },
+  { id: "ALI-047.1", nombre: "Fideo Santa Isabel 500g Spaghetti", categoria: "Almacén", precio: 600 },
+  { id: "ALI-048.1", nombre: "Fideo Santa Isabel 500g Tallarín", categoria: "Almacén", precio: 600 },
+  { id: "ALI-050.OF", nombre: "Puré de tomate Santa Isabel 520g", categoria: "Almacén", precio: 620 },
+  { id: "ALI-036.0", nombre: "Aceite Legítimo 1500cc", categoria: "Almacén", precio: 4750 },
+  { id: "ALI-037.OF", nombre: "Aceite Legítimo 900cc", categoria: "Almacén", precio: 3190 },
+  { id: "ALI-061", nombre: "Arroz largo fino 1kg", categoria: "Almacén", precio: 1250 },
+  { id: "ALI-072", nombre: "Azúcar común 1kg", categoria: "Almacén", precio: 1100 },
+  { id: "ALI-083", nombre: "Harina de trigo 1kg", categoria: "Almacén", precio: 980 },
+  { id: "ALI-091", nombre: "Yerba mate 1kg", categoria: "Almacén", precio: 2850 },
+  { id: "BEB-G002.1", nombre: "Coca-Cola PET 2250cc", categoria: "Bebidas", precio: 3600 },
+  { id: "BEB-G007.NF", nombre: "Sprite PET 2250cc", categoria: "Bebidas", precio: 3600 },
+  { id: "BEB-G014.1", nombre: "Aquarius 2500cc Limonada", categoria: "Bebidas", precio: 2135 },
+  { id: "BEB-G015.1", nombre: "Aquarius 2500cc Manzana", categoria: "Bebidas", precio: 2135 },
+  { id: "BEB-V012", nombre: "Alaris Malbec", categoria: "Bebidas", precio: 4100 },
+  { id: "BEB-L001.1", nombre: "Fernet Branca 750cc", categoria: "Bebidas", precio: 14450 },
+  { id: "SNK-002", nombre: "Crutons Minitostaditas Jamón", categoria: "Snacks", precio: 1800 },
+  { id: "SNK-004", nombre: "Crutons Minitostaditas Salame", categoria: "Snacks", precio: 1800 },
+  { id: "SNK-011", nombre: "Papas fritas clásicas 100g", categoria: "Snacks", precio: 1500 },
+  { id: "SNK-014", nombre: "Maní tostado salado 100g", categoria: "Snacks", precio: 950 },
 ];
 const clientes = [
   {
@@ -103,6 +123,10 @@ function mostrarVista(nombre) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 function renderCatalogo() {
+  if (typeof renderCatalogoFiltrado === "function") {
+    renderCatalogoFiltrado();
+    return;
+  }
   $("#catalogo").innerHTML = productos
     .map((producto) => {
       const cantidad = carrito.get(producto.id) ?? 0;
@@ -216,17 +240,6 @@ $("#formulario-cliente").addEventListener("submit", (evento) => {
   seleccionarCliente(nuevo);
   $("#formulario-cliente").reset();
   $("#formulario-cliente").hidden = true;
-});
-$("#catalogo").addEventListener("click", (evento) => {
-  const boton = evento.target.closest("button[data-producto]");
-  if (!boton) return;
-  const id = boton.dataset.producto;
-  const cantidad = Math.max(
-    0,
-    (carrito.get(id) ?? 0) + Number(boton.dataset.cambio),
-  );
-  cantidad ? carrito.set(id, cantidad) : carrito.delete(id);
-  renderCatalogo();
 });
 document.querySelectorAll("[data-vista]").forEach((boton) =>
   boton.addEventListener("click", () => {

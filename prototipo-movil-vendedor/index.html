@@ -111,10 +111,15 @@
           id="filtro-productos"
           class="campo"
           type="search"
-          placeholder="Filtrar productos por nombre o categoría"
+          placeholder="Buscar producto por nombre"
           autocomplete="off"
         />
+        <select id="categoria-productos" class="campo selector-categoria" aria-label="Filtrar por categoría">
+          <option value="">Todas las categorías</option>
+        </select>
         <div id="catalogo" class="catalogo"></div>
+        <div id="paginacion-productos" class="paginacion-productos"></div>
+        <section id="resumen-carrito" class="resumen-carrito"></section>
         <button id="previsualizar" class="accion-principal" disabled>
           Revisar remito <span id="total-boton">$0</span>
         </button>
