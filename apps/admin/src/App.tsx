@@ -282,7 +282,6 @@ export default function App(): JSX.Element {
                 productos={productos}
                 lotes={lotes}
                 navegar={navegar}
-                categorias={categorias}
               />
             )}
             {vista === "compras" && (
@@ -724,28 +723,69 @@ function TablaLotes({
   productos,
   lotes,
   navegar,
-  categorias,
 }: {
   productos: ProductoInventario[];
   lotes: LoteDetalle[];
   navegar: (vista: Vista) => void;
-  categorias: string[];
 }): JSX.Element {
-  const [busqueda, setBusqueda] = useState("");
-  const [categoria, setCategoria] = useState("");
+  const [proveedor, setProveedor] = useState("");
+  const [fechaDesde, setFechaDesde] = useState("");
+  const [fechaHasta, setFechaHasta] = useState("");
+  const [ordenFecha, setOrdenFecha] = useState<"recientes" | "antiguas">(
+    "recientes",
+  );
+  const [mostrarAgotados, setMostrarAgotados] = useState(false);
+  const [abiertos, setAbiertos] = useState<Set<string>>(new Set());
   const productosPorId = new Map(
     productos.map((producto) => [producto.id, producto]),
   );
-  const termino = busqueda.trim().toLowerCase();
-  const lista = lotes.filter((lote) => {
-    const producto = productosPorId.get(lote.productoId);
-    const texto =
-      `${lote.productoSku} ${lote.productoNombre} ${lote.codigoLote} ${lote.numeroFactura ?? ""} ${lote.proveedor ?? ""}`.toLowerCase();
-    return (
-      (!categoria || producto?.categoria === categoria) &&
-      texto.includes(termino)
-    );
-  });
+  const lotesPorCodigo = new Map<string, LoteDetalle[]>();
+  for (const lote of lotes) {
+    const lineas = lotesPorCodigo.get(lote.codigoLote) ?? [];
+    lineas.push(lote);
+    lotesPorCodigo.set(lote.codigoLote, lineas);
+  }
+  const grupos = Array.from(lotesPorCodigo, ([codigo, lineas]) => ({
+    codigo,
+    lineas,
+    numeroFactura: lineas[0]?.numeroFactura ?? null,
+    proveedor: lineas[0]?.proveedor ?? null,
+    recibidoEn: lineas[0]?.recibidoEn ?? "",
+    costoTotal: lineas.reduce(
+      (total, lote) => total + lote.cantidadOriginal * lote.costoUnitario,
+      0,
+    ),
+    cantidadRestante: lineas.reduce(
+      (total, lote) => total + lote.cantidadRestante,
+      0,
+    ),
+  }));
+  const proveedores = Array.from(
+    new Set(
+      grupos
+        .map((grupo) => grupo.proveedor)
+        .filter((item): item is string => Boolean(item)),
+    ),
+  ).sort();
+  const gruposFiltrados = grupos
+    .filter((grupo) => mostrarAgotados || grupo.cantidadRestante > 0)
+    .filter((grupo) => !proveedor || grupo.proveedor === proveedor)
+    .filter(
+      (grupo) => !fechaDesde || grupo.recibidoEn.slice(0, 10) >= fechaDesde,
+    )
+    .filter(
+      (grupo) => !fechaHasta || grupo.recibidoEn.slice(0, 10) <= fechaHasta,
+    )
+    .sort((a, b) => {
+      const diferencia =
+        new Date(a.recibidoEn).getTime() - new Date(b.recibidoEn).getTime();
+      return ordenFecha === "recientes" ? -diferencia : diferencia;
+    });
+  const alternar = (codigo: string): void => {
+    const siguiente = new Set(abiertos);
+    siguiente.has(codigo) ? siguiente.delete(codigo) : siguiente.add(codigo);
+    setAbiertos(siguiente);
+  };
   return (
     <section className="pagina">
       <div className="pagina__encabezado">
@@ -753,8 +793,8 @@ function TablaLotes({
           <p className="eyebrow">Operaciones / Stock / Lotes</p>
           <h1>Lotes</h1>
           <p className="subtitulo">
-            Cada fila representa un lote recibido, con factura, proveedor, costo
-            y cantidades.
+            Lotes agrupados por compra. Desplegá cada uno para ver sus
+            productos, remanentes y costos.
           </p>
         </div>
         <button
@@ -764,75 +804,178 @@ function TablaLotes({
           ＋ Registrar compra
         </button>
       </div>
-      <Filtros
-        categorias={categorias}
-        onBuscar={setBusqueda}
-        categoria={categoria}
-        onCategoria={setCategoria}
-      />
+      <section className="panel filtros-lotes">
+        <label>
+          Proveedor
+          <select
+            value={proveedor}
+            onChange={(evento) => setProveedor(evento.target.value)}
+          >
+            <option value="">Todos</option>
+            {proveedores.map((nombre) => (
+              <option key={nombre} value={nombre}>
+                {nombre}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Fecha desde
+          <input
+            type="date"
+            value={fechaDesde}
+            onChange={(evento) => setFechaDesde(evento.target.value)}
+          />
+        </label>
+        <label>
+          Fecha hasta
+          <input
+            type="date"
+            value={fechaHasta}
+            onChange={(evento) => setFechaHasta(evento.target.value)}
+          />
+        </label>
+        <label>
+          Ordenar fecha
+          <select
+            value={ordenFecha}
+            onChange={(evento) =>
+              setOrdenFecha(evento.target.value as "recientes" | "antiguas")
+            }
+          >
+            <option value="recientes">Más recientes</option>
+            <option value="antiguas">Más antiguas</option>
+          </select>
+        </label>
+        <label className="filtros-lotes__agotados">
+          <input
+            type="checkbox"
+            checked={mostrarAgotados}
+            onChange={(evento) => setMostrarAgotados(evento.target.checked)}
+          />{" "}
+          Mostrar lotes vacíos / agotados
+        </label>
+      </section>
       <div className="tabla-contenedor">
         <table>
           <thead>
             <tr>
-              <th>Lote / producto</th>
-              <th>Categoría</th>
-              <th>Factura / proveedor</th>
-              <th>Fecha de ingreso</th>
-              <th>Costo unitario</th>
-              <th>Cantidad inicial</th>
-              <th>Remanente</th>
-              <th>Vencimiento</th>
+              <th>IdLote</th>
+              <th>Nombre lote</th>
+              <th>Factura</th>
+              <th>Proveedor</th>
+              <th>Fecha creación</th>
+              <th>Estado</th>
             </tr>
           </thead>
           <tbody>
-            {lista.map((lote) => {
-              const producto = productosPorId.get(lote.productoId);
-              const porcentajeRestante =
-                lote.cantidadOriginal > 0
-                  ? (lote.cantidadRestante / lote.cantidadOriginal) * 100
-                  : 0;
+            {gruposFiltrados.map((grupo) => {
+              const abierto = abiertos.has(grupo.codigo);
+              const activo = grupo.cantidadRestante > 0;
               return (
-                <tr key={lote.id}>
-                  <td>
-                    <strong>{lote.codigoLote}</strong>
-                    <small className="celda-secundaria">
-                      {lote.productoSku} · {lote.productoNombre}
-                    </small>
-                  </td>
-                  <td>
-                    <span className="etiqueta-categoria">
-                      {producto?.categoria ?? "Sin categoría"}
-                    </span>
-                  </td>
-                  <td>
-                    {lote.numeroFactura ?? "—"}
-                    <small className="celda-secundaria">
-                      {lote.proveedor ?? "Proveedor sin nombre"}
-                    </small>
-                  </td>
-                  <td>
-                    {lote.recibidoEn ? fechaVisible(lote.recibidoEn) : "—"}
-                  </td>
-                  <td>{dinero(lote.costoUnitario)}</td>
-                  <td>{lote.cantidadOriginal} u.</td>
-                  <td className="stock-celda">
-                    <strong>{lote.cantidadRestante} u.</strong>
-                    <div className="barra-stock barra-stock--lote">
-                      <i style={{ width: `${porcentajeRestante}%` }} />
-                    </div>
-                  </td>
-                  <td>
-                    {lote.fechaVencimiento
-                      ? fechaVisible(lote.fechaVencimiento)
-                      : "—"}
-                  </td>
-                </tr>
+                <Fragment key={grupo.codigo}>
+                  <tr
+                    className={
+                      abierto
+                        ? "fila-producto fila-producto--abierta"
+                        : "fila-producto"
+                    }
+                  >
+                    <td>
+                      <button
+                        className="expansor"
+                        aria-expanded={abierto}
+                        onClick={() => alternar(grupo.codigo)}
+                      >
+                        {abierto ? "⌄" : "›"}
+                      </button>{" "}
+                      {grupo.codigo}
+                    </td>
+                    <td>{grupo.codigo}</td>
+                    <td>{grupo.numeroFactura ?? "—"}</td>
+                    <td>{grupo.proveedor ?? "Proveedor sin nombre"}</td>
+                    <td>
+                      {grupo.recibidoEn ? fechaVisible(grupo.recibidoEn) : "—"}
+                    </td>
+                    <td>
+                      <span
+                        className={
+                          activo
+                            ? "estado estado--activo"
+                            : "estado estado--agotado"
+                        }
+                      >
+                        {activo ? "Activo" : "Agotado"}
+                      </span>
+                    </td>
+                  </tr>
+                  {abierto &&
+                    grupo.lineas.map((lote) => {
+                      const producto = productosPorId.get(lote.productoId);
+                      const porcentajeRestante =
+                        lote.cantidadOriginal > 0
+                          ? (lote.cantidadRestante / lote.cantidadOriginal) *
+                            100
+                          : 0;
+                      const colorBarra =
+                        porcentajeRestante > 70
+                          ? "barra-progreso-verde"
+                          : porcentajeRestante > 30
+                            ? "barra-progreso-ambar"
+                            : "barra-progreso-rojo";
+                      return (
+                        <tr className="fila-lote" key={lote.id}>
+                          <td>↳ {lote.productoSku}</td>
+                          <td>
+                            <strong>{lote.productoNombre}</strong>
+                          </td>
+                          <td>—</td>
+                          <td>{producto?.categoria ?? "Sin categoría"}</td>
+                          <td>
+                            <div className="progreso-lote-en-linea">
+                              <div
+                                className="barra-progreso-lote"
+                                role="progressbar"
+                                aria-label={`${lote.cantidadRestante} de ${lote.cantidadOriginal} unidades restantes`}
+                                aria-valuemin={0}
+                                aria-valuemax={lote.cantidadOriginal}
+                                aria-valuenow={lote.cantidadRestante}
+                              >
+                                <span
+                                  className={`barra-progreso-lote-relleno ${colorBarra}`}
+                                  style={{ width: `${porcentajeRestante}%` }}
+                                />
+                              </div>
+                              <strong>
+                                {lote.cantidadRestante} /{" "}
+                                {lote.cantidadOriginal} restantes
+                              </strong>
+                            </div>
+                          </td>
+                          <td>
+                            {dinero(lote.costoUnitario)} · subtotal{" "}
+                            {dinero(lote.cantidadOriginal * lote.costoUnitario)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  {abierto && (
+                    <tr className="fila-total" key={`${grupo.codigo}-total`}>
+                      <td colSpan={5} className="texto-total-lote">
+                        Costo total del lote
+                      </td>
+                      <td>
+                        <strong>{dinero(grupo.costoTotal)}</strong>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               );
             })}
           </tbody>
         </table>
-        {lista.length === 0 && (
-          <EstadoVacio texto="No hay lotes que coincidan con la búsqueda." />
+        {gruposFiltrados.length === 0 && (
+          <EstadoVacio texto="No hay lotes que coincidan con los filtros." />
         )}
       </div>
     </section>

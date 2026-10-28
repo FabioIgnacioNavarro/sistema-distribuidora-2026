@@ -52,5 +52,22 @@ button { cursor: pointer; }
 .detalle-lote-stock small { color: #839189; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }
 .detalle-lote-stock strong { color: #536158; font-size: 12px; }
 .app--oscura .detalle-lote-stock strong { color: #d4e0d6; }
+.filtros-lotes { display: grid; grid-template-columns: repeat(4, minmax(140px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.filtros-lotes > label:not(.filtros-lotes__agotados) { display: grid; gap: 7px; color: #65736a; font-size: 12px; font-weight: 800; }
+.filtros-lotes select, .filtros-lotes input[type="date"] { min-height: 42px; padding: 9px 11px; color: inherit; border: 1px solid #dce6dd; border-radius: 9px; background: #fff; }
+.app--oscura .filtros-lotes select, .app--oscura .filtros-lotes input[type="date"] { color: inherit; border-color: var(--borde); background: var(--superficie-2); }
+.filtros-lotes__agotados { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; color: #65736a; font-size: 12px; }
+.progreso-lote-en-linea { display: flex; min-width: 230px; align-items: center; gap: 10px; }
+.barra-progreso-lote { width: 90px; height: 8px; flex: 0 0 90px; overflow: hidden; border-radius: 999px; background: #e2e8e4; }
+.barra-progreso-lote-relleno { display: block; height: 100%; border-radius: inherit; transition: width .2s ease; }
+.barra-progreso-verde { background: #22c55e; }
+.barra-progreso-ambar { background: #f59e0b; }
+.barra-progreso-rojo { background: #ef4444; }
+.progreso-lote-en-linea strong { white-space: nowrap; font-size: 11px; }
+.fila-total td { font-weight: 700; background: #f3f7f3; }
+.app--oscura .fila-total td { color: #d4e0d6; background: #223127; }
+.texto-total-lote { text-align: right; }
+.filtros-lotes__agotados input { accent-color: #176b43; }
+@media (max-width: 900px) { .filtros-lotes { grid-template-columns: repeat(2, minmax(140px, 1fr)); } }
 .aviso-error { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 20px 42px 0; padding: 13px 16px; color: #842e2e; border: 1px solid #e8bcbc; border-radius: 10px; background: #fff0f0; font-size: 13px; }.aviso-error button { color: inherit; border: 0; background: transparent; font-weight: 800; }.app--oscura .aviso-error { color: #ffcaca; border-color: #744343; background: #392323; }.formulario-acciones { align-items: center; justify-content: space-between; }.formulario-acciones strong { margin-right: auto; font-size: 15px; }.boton:disabled, .accion-tabla:disabled { cursor: not-allowed; opacity: .5; }.detalle-compra { padding: 8px 12px; }.detalle-compra ul { margin: 10px 0 0; padding-left: 20px; color: #718077; line-height: 1.8; }.app--oscura .detalle-compra ul { color: #bdcbbf; }
 .lineas-factura__encabezados { display: grid; grid-template-columns: 2fr .7fr .9fr 1fr auto; gap: 9px; color: #839189; font-size: 10px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }.lineas-factura__encabezados span { min-width: 0; }.campo-moneda { display: flex; min-height: 42px; align-items: center; padding-left: 11px; color: #718077; border: 1px solid #dce6dd; border-radius: 9px; background: #fff; }.campo-moneda > span { font-size: 14px; font-weight: 800; }.linea-factura .campo-moneda input { min-height: 40px; padding-left: 7px; border: 0; background: transparent; }.app--oscura .campo-moneda { color: #c5d3c8; border-color: var(--borde); background: var(--superficie-2); }.app--oscura .linea-factura .campo-moneda input { background: transparent; }
