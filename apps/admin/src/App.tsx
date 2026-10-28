@@ -667,6 +667,64 @@ function Filtros({
   );
 }
 
+function BuscadorLista({
+  opciones,
+  valor,
+  onCambiar,
+  placeholder,
+}: {
+  opciones: Array<{ valor: string; etiqueta: string }>;
+  valor: string;
+  onCambiar: (valor: string) => void;
+  placeholder: string;
+}): JSX.Element {
+  const [abierto, setAbierto] = useState(false);
+  const [texto, setTexto] = useState("");
+  const seleccionada = opciones.find((opcion) => opcion.valor === valor);
+  const coincidencias = opciones
+    .filter((opcion) =>
+      opcion.etiqueta.toLowerCase().includes(texto.toLowerCase()),
+    )
+    .slice(0, 20);
+  return (
+    <div className="buscador-lista">
+      <input
+        value={abierto ? texto : (seleccionada?.etiqueta ?? "")}
+        placeholder={placeholder}
+        onFocus={() => {
+          setAbierto(true);
+          setTexto("");
+        }}
+        onChange={(evento) => {
+          setTexto(evento.target.value);
+          setAbierto(true);
+        }}
+      />
+      {abierto && (
+        <div className="buscador-lista__resultados">
+          {coincidencias.map((opcion) => (
+            <button
+              type="button"
+              key={opcion.valor}
+              onMouseDown={(evento) => evento.preventDefault()}
+              onClick={() => {
+                onCambiar(opcion.valor);
+                setTexto("");
+                setAbierto(false);
+              }}
+            >
+              {opcion.etiqueta}
+            </button>
+          ))}
+          {coincidencias.length === 0 && (
+            <span>No se encontraron resultados.</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TablaProductos({
   productos,
   lotes,
@@ -996,17 +1054,18 @@ function TablaLotes({
       >
         <label>
           Proveedor
-          <select
-            value={proveedor}
-            onChange={(evento) => setProveedor(evento.target.value)}
-          >
-            <option value="">Todos</option>
-            {proveedores.map((nombre) => (
-              <option key={nombre} value={nombre}>
-                {nombre}
-              </option>
-            ))}
-          </select>
+          <BuscadorLista
+            opciones={[
+              { valor: "", etiqueta: "Todos los proveedores" },
+              ...proveedores.map((nombre) => ({
+                valor: nombre,
+                etiqueta: nombre,
+              })),
+            ]}
+            valor={proveedor}
+            onCambiar={setProveedor}
+            placeholder="Buscar proveedor..."
+          />
         </label>
         <label>
           Fecha desde
@@ -1971,17 +2030,18 @@ function HistorialCompras({
         </label>
         <label>
           Proveedor
-          <select
-            value={proveedor}
-            onChange={(evento) => setProveedor(evento.target.value)}
-          >
-            <option value="">Todos los proveedores</option>
-            {proveedores.map((nombre) => (
-              <option key={nombre} value={nombre}>
-                {nombre}
-              </option>
-            ))}
-          </select>
+          <BuscadorLista
+            opciones={[
+              { valor: "", etiqueta: "Todos los proveedores" },
+              ...proveedores.map((nombre) => ({
+                valor: nombre,
+                etiqueta: nombre,
+              })),
+            ]}
+            valor={proveedor}
+            onCambiar={setProveedor}
+            placeholder="Buscar proveedor..."
+          />
         </label>
         <label>
           Ordenar
