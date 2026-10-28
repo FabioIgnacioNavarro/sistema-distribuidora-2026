@@ -13,6 +13,7 @@ export const productoInventarioSchema = z.object({
 
 export const loteDetalleSchema = z.object({
   id: z.string().uuid(),
+  facturaCompraId: z.string().uuid().nullable(),
   productoId: z.string().uuid(),
   codigoLote: z.string(),
   cantidadOriginal: z.number().int(),
@@ -39,6 +40,7 @@ export interface ProductoInventario {
 
 export interface LoteInventario {
   id: string;
+  facturaCompraId: string | null;
   productoId: string;
   codigoLote: string;
   cantidadOriginal: number;

@@ -69,5 +69,24 @@ button { cursor: pointer; }
 .texto-total-lote { text-align: right; }
 .filtros-lotes__agotados input { accent-color: #176b43; }
 @media (max-width: 900px) { .filtros-lotes { grid-template-columns: repeat(2, minmax(140px, 1fr)); } }
+.filtros-lotes, .filtros-historial-compras { padding: 20px; }
+.filtros-historial-compras { display: grid; grid-template-columns: repeat(4, minmax(140px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.filtros-historial-compras label { display: grid; gap: 7px; color: #65736a; font-size: 12px; font-weight: 800; }
+.filtros-historial-compras input, .filtros-historial-compras select { min-height: 42px; padding: 9px 11px; color: inherit; border: 1px solid #dce6dd; border-radius: 9px; background: #fff; }
+.app--oscura .filtros-historial-compras input, .app--oscura .filtros-historial-compras select { color: inherit; border-color: var(--borde); background: var(--superficie-2); }
+.app--oscura .barra-filtros select { color: inherit; }
+.categoria-linea-compra { min-height: 42px; display: flex; align-items: center; padding: 9px; color: #597166; border-radius: 8px; background: #edf3ee; font-size: 12px; }
+.app--oscura .categoria-linea-compra { color: #bad5c0; background: #29412f; }
+.subtotal-linea-compra { min-height: 42px; display: flex; align-items: center; white-space: nowrap; color: inherit; font-size: 12px; }
+.lineas-factura__encabezados { grid-template-columns: 2fr 1fr .6fr 1fr 1fr 1fr auto; }
+.linea-factura { grid-template-columns: 2fr 1fr .6fr 1fr 1fr 1fr auto; align-items: center; }
+.detalle-historial-compra { display: grid; gap: 18px; margin-top: 22px; }
+.detalle-historial-compra h2 { margin: -12px 0 0; font-size: 20px; }
+.resumen-factura { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 16px; border-radius: 12px; background: #f3f7f3; }
+.resumen-factura p { display: grid; gap: 6px; margin: 0; }
+.resumen-factura p span { color: #849188; font-size: 11px; }
+.resumen-factura p strong { font-size: 13px; }
+.app--oscura .resumen-factura { background: var(--superficie-2); }
+@media (max-width: 900px) { .filtros-historial-compras { grid-template-columns: repeat(2, minmax(140px, 1fr)); }.resumen-factura { grid-template-columns: repeat(2, 1fr); } }
 .aviso-error { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 20px 42px 0; padding: 13px 16px; color: #842e2e; border: 1px solid #e8bcbc; border-radius: 10px; background: #fff0f0; font-size: 13px; }.aviso-error button { color: inherit; border: 0; background: transparent; font-weight: 800; }.app--oscura .aviso-error { color: #ffcaca; border-color: #744343; background: #392323; }.formulario-acciones { align-items: center; justify-content: space-between; }.formulario-acciones strong { margin-right: auto; font-size: 15px; }.boton:disabled, .accion-tabla:disabled { cursor: not-allowed; opacity: .5; }.detalle-compra { padding: 8px 12px; }.detalle-compra ul { margin: 10px 0 0; padding-left: 20px; color: #718077; line-height: 1.8; }.app--oscura .detalle-compra ul { color: #bdcbbf; }
 .lineas-factura__encabezados { display: grid; grid-template-columns: 2fr .7fr .9fr 1fr auto; gap: 9px; color: #839189; font-size: 10px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }.lineas-factura__encabezados span { min-width: 0; }.campo-moneda { display: flex; min-height: 42px; align-items: center; padding-left: 11px; color: #718077; border: 1px solid #dce6dd; border-radius: 9px; background: #fff; }.campo-moneda > span { font-size: 14px; font-weight: 800; }.linea-factura .campo-moneda input { min-height: 40px; padding-left: 7px; border: 0; background: transparent; }.app--oscura .campo-moneda { color: #c5d3c8; border-color: var(--borde); background: var(--superficie-2); }.app--oscura .linea-factura .campo-moneda input { background: transparent; }

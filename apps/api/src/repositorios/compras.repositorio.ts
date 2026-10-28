@@ -82,7 +82,7 @@ export async function obtenerLotes(): Promise<LoteDetalle[]> {
   const { data, error } = await supabase
     .from("lotes")
     .select(
-      "id, producto_id, codigo_lote, cantidad_original, cantidad_restante, costo_unitario, fecha_vencimiento, recibido_en, productos(sku, nombre), facturas_compra(nro_factura, proveedor)",
+      "id, factura_compra_id, producto_id, codigo_lote, cantidad_original, cantidad_restante, costo_unitario, fecha_vencimiento, recibido_en, productos(sku, nombre), facturas_compra(nro_factura, proveedor)",
     )
     .order("recibido_en", { ascending: false });
 
@@ -92,6 +92,7 @@ export async function obtenerLotes(): Promise<LoteDetalle[]> {
     return [
       {
         id: lote.id,
+        facturaCompraId: lote.factura_compra_id,
         productoId: lote.producto_id,
         codigoLote: lote.codigo_lote,
         cantidadOriginal: lote.cantidad_original,
