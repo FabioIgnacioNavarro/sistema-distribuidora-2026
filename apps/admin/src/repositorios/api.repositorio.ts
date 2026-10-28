@@ -1,5 +1,7 @@
 import {
   compraHistorialSchema,
+  crearProductoRespuestaSchema,
+  crearProductoSchema,
   loteDetalleSchema,
   productoInventarioSchema,
   registrarCompraRespuestaSchema,
@@ -58,6 +60,19 @@ export async function crearCompra(entradaSinValidar: unknown): Promise<string> {
   const entrada = registrarCompraSchema.parse(entradaSinValidar);
   const respuesta = registrarCompraRespuestaSchema.parse(
     await consultarApi("/api/compras", {
+      method: "POST",
+      body: JSON.stringify(entrada),
+    }),
+  );
+  return respuesta.id;
+}
+
+export async function crearProducto(
+  entradaSinValidar: unknown,
+): Promise<string> {
+  const entrada = crearProductoSchema.parse(entradaSinValidar);
+  const respuesta = crearProductoRespuestaSchema.parse(
+    await consultarApi("/api/productos", {
       method: "POST",
       body: JSON.stringify(entrada),
     }),

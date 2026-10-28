@@ -4,12 +4,35 @@ const fechaSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "La fecha debe tener formato AAAA-MM-DD");
 
-export const lineaCompraSchema = z.object({
-  productoId: z.string().uuid(),
-  cantidad: z.number().int().positive(),
-  costoUnitario: z.number().nonnegative(),
-  fechaVencimiento: fechaSchema.nullable().optional(),
+export const nuevoProductoCompraSchema = z.object({
+  sku: z.string().trim().min(1).max(50),
+  nombre: z.string().trim().min(1).max(200),
+  categoria: z.string().trim().min(1).max(100),
 });
+
+export const lineaCompraSchema = z
+  .object({
+    productoId: z.string().uuid().nullable().optional(),
+    nuevoProducto: nuevoProductoCompraSchema.nullable().optional(),
+    cantidad: z.number().int().positive(),
+    costoUnitario: z.number().nonnegative(),
+    fechaVencimiento: fechaSchema.nullable().optional(),
+  })
+  .superRefine((linea, contexto) => {
+    if (!linea.productoId && !linea.nuevoProducto) {
+      contexto.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Seleccioná un producto o completá el nuevo producto.",
+      });
+    }
+    if (linea.productoId && linea.nuevoProducto) {
+      contexto.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Una línea no puede tener producto existente y nuevo a la vez.",
+      });
+    }
+  });
 
 export const registrarCompraSchema = z.object({
   nroFactura: z.string().trim().min(1).max(100),
@@ -20,6 +43,17 @@ export const registrarCompraSchema = z.object({
 });
 
 export type RegistrarCompraEntrada = z.infer<typeof registrarCompraSchema>;
+
+export const crearProductoSchema = z.object({
+  sku: z.string().trim().min(1).max(50),
+  nombre: z.string().trim().min(1).max(200),
+  categoria: z.string().trim().min(1).max(100),
+  precioVenta: z.number().nonnegative(),
+  markupPct: z.number().min(0).max(100),
+});
+export type CrearProductoEntrada = z.infer<typeof crearProductoSchema>;
+
+export const crearProductoRespuestaSchema = z.object({ id: z.string().uuid() });
 
 export interface CompraRegistrada {
   id: string;

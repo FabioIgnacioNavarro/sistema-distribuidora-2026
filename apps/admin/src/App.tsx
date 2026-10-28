@@ -2,12 +2,14 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import type {
   CompraHistorial,
+  CrearProductoEntrada,
   LoteDetalle,
   ProductoInventario,
   RegistrarCompraEntrada,
 } from "@distribuidora/tipos-compartidos";
 import {
   crearCompra,
+  crearProducto,
   obtenerCompras,
   obtenerLotes,
   obtenerProductos,
@@ -24,7 +26,8 @@ type Vista =
   | "historialCompras"
   | "clientes";
 interface LineaCompraFormulario {
-  productoId: string;
+  productoId: string | null;
+  nuevoProducto: { sku: string; nombre: string; categoria: string } | null;
   cantidad: number;
   costoUnitario: number;
   fechaVencimiento: string;
@@ -59,6 +62,8 @@ export default function App(): JSX.Element {
   const [modalReinicio, setModalReinicio] = useState(false);
   const [confirmacion, setConfirmacion] = useState("");
   const [reiniciando, setReiniciando] = useState(false);
+  const [modalProducto, setModalProducto] = useState(false);
+  const [creandoProducto, setCreandoProducto] = useState(false);
 
   const cargarDatos = useCallback(async (): Promise<void> => {
     setError(null);
@@ -129,6 +134,26 @@ export default function App(): JSX.Element {
       );
     } finally {
       setGuardando(false);
+    }
+  };
+
+  const guardarProducto = async (
+    entrada: CrearProductoEntrada,
+  ): Promise<void> => {
+    setCreandoProducto(true);
+    setError(null);
+    try {
+      await crearProducto(entrada);
+      setModalProducto(false);
+      await cargarDatos();
+    } catch (errorCreacion) {
+      setError(
+        errorCreacion instanceof Error
+          ? errorCreacion.message
+          : "No se pudo crear el producto.",
+      );
+    } finally {
+      setCreandoProducto(false);
     }
   };
 
@@ -266,7 +291,11 @@ export default function App(): JSX.Element {
               />
             )}
             {vista === "precios" && (
-              <ListaPrecios productos={productos} categorias={categorias} />
+              <ListaPrecios
+                productos={productos}
+                categorias={categorias}
+                onNuevoProducto={() => setModalProducto(true)}
+              />
             )}
             {vista === "productos" && (
               <TablaProductos
@@ -367,6 +396,13 @@ export default function App(): JSX.Element {
             </form>
           </section>
         </div>
+      )}
+      {modalProducto && (
+        <ModalNuevoProducto
+          guardando={creandoProducto}
+          onCerrar={() => setModalProducto(false)}
+          onGuardar={guardarProducto}
+        />
       )}
     </div>
   );
@@ -1041,9 +1077,11 @@ function TablaLotes({
 function ListaPrecios({
   productos,
   categorias,
+  onNuevoProducto,
 }: {
   productos: ProductoInventario[];
   categorias: string[];
+  onNuevoProducto: () => void;
 }): JSX.Element {
   const [busqueda, setBusqueda] = useState("");
   const [categoria, setCategoria] = useState("");
@@ -1083,6 +1121,9 @@ function ListaPrecios({
             Precios y markup vigentes registrados en el catálogo.
           </p>
         </div>
+        <button className="boton boton--primario" onClick={onNuevoProducto}>
+          ＋ Nuevo producto
+        </button>
       </div>
       <Filtros
         categorias={categorias}
@@ -1175,6 +1216,123 @@ function RegistrarCompra({
   );
 }
 
+function ModalNuevoProducto({
+  guardando,
+  onCerrar,
+  onGuardar,
+}: {
+  guardando: boolean;
+  onCerrar: () => void;
+  onGuardar: (entrada: CrearProductoEntrada) => Promise<void>;
+}): JSX.Element {
+  const [sku, setSku] = useState("");
+  const [nombre, setNombre] = useState("");
+  const [categoria, setCategoria] = useState("");
+  const [precioVenta, setPrecioVenta] = useState(0);
+  const [markupPct, setMarkupPct] = useState(0);
+  const enviar = (evento: FormEvent<HTMLFormElement>): void => {
+    evento.preventDefault();
+    void onGuardar({ sku, nombre, categoria, precioVenta, markupPct });
+  };
+  return (
+    <div
+      className="modal-fondo"
+      role="presentation"
+      onMouseDown={(evento) => {
+        if (evento.target === evento.currentTarget && !guardando) onCerrar();
+      }}
+    >
+      <section
+        className="modal-tarjeta modal-producto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="titulo-nuevo-producto"
+      >
+        <button
+          className="modal-cerrar"
+          aria-label="Cerrar"
+          disabled={guardando}
+          onClick={onCerrar}
+        >
+          ×
+        </button>
+        <p className="eyebrow">Catálogo</p>
+        <h2 id="titulo-nuevo-producto">Nuevo producto</h2>
+        <p className="subtitulo">
+          Se crea sin stock. Podés cargar su primera existencia desde una
+          factura.
+        </p>
+        <form className="campos-grid" onSubmit={enviar}>
+          <label>
+            SKU
+            <input
+              required
+              value={sku}
+              onChange={(evento) => setSku(evento.target.value)}
+            />
+          </label>
+          <label>
+            Nombre
+            <input
+              required
+              value={nombre}
+              onChange={(evento) => setNombre(evento.target.value)}
+            />
+          </label>
+          <label>
+            Categoría
+            <input
+              required
+              value={categoria}
+              onChange={(evento) => setCategoria(evento.target.value)}
+            />
+          </label>
+          <label>
+            Precio de venta ($)
+            <input
+              required
+              type="number"
+              min="0"
+              step="0.01"
+              value={precioVenta}
+              onChange={(evento) => setPrecioVenta(Number(evento.target.value))}
+            />
+          </label>
+          <label>
+            Markup (%)
+            <input
+              required
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              value={markupPct}
+              onChange={(evento) => setMarkupPct(Number(evento.target.value))}
+            />
+          </label>
+          <div className="formulario-acciones">
+            <button
+              type="button"
+              className="boton boton--secundario"
+              disabled={guardando}
+              onClick={onCerrar}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="boton boton--primario"
+              disabled={guardando}
+            >
+              {guardando ? "Guardando…" : "Crear producto"}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  );
+}
+
 function FacturaFormulario({
   productos,
   guardando,
@@ -1191,6 +1349,8 @@ function FacturaFormulario({
   const [lineas, setLineas] = useState<LineaCompraFormulario[]>([
     {
       productoId: productos[0]?.id ?? "",
+      nuevoProducto:
+        productos.length === 0 ? { sku: "", nombre: "", categoria: "" } : null,
       cantidad: 1,
       costoUnitario: 0,
       fechaVencimiento: "",
@@ -1201,6 +1361,7 @@ function FacturaFormulario({
       ...actuales,
       {
         productoId: productos[0]?.id ?? "",
+        nuevoProducto: null,
         cantidad: 1,
         costoUnitario: 0,
         fechaVencimiento: "",
@@ -1228,6 +1389,7 @@ function FacturaFormulario({
       notas: notas || null,
       lineas: lineas.map((linea) => ({
         productoId: linea.productoId,
+        nuevoProducto: linea.nuevoProducto,
         cantidad: linea.cantidad,
         costoUnitario: linea.costoUnitario,
         fechaVencimiento: linea.fechaVencimiento || null,
@@ -1238,11 +1400,15 @@ function FacturaFormulario({
     proveedor.trim() &&
     numero.trim() &&
     fecha &&
-    productos.length > 0 &&
     lineas.length > 0 &&
     lineas.every(
       (linea) =>
-        linea.productoId && linea.cantidad > 0 && linea.costoUnitario >= 0,
+        (linea.productoId ||
+          (linea.nuevoProducto?.sku.trim() &&
+            linea.nuevoProducto.nombre.trim() &&
+            linea.nuevoProducto.categoria.trim())) &&
+        linea.cantidad > 0 &&
+        linea.costoUnitario >= 0,
     ),
   );
   return (
@@ -1296,39 +1462,53 @@ function FacturaFormulario({
           <button
             type="button"
             className="boton boton--secundario"
-            disabled={productos.length === 0}
             onClick={agregar}
           >
             ＋ Añadir producto
           </button>
         </div>
-        {productos.length === 0 ? (
-          <EstadoVacio texto="No hay productos activos. Primero necesitás productos en el catálogo." />
-        ) : (
-          <div className="lineas-factura">
-            <div className="lineas-factura__encabezados" aria-hidden="true">
-              <span>Producto</span>
-              <span>Categoría</span>
-              <span>Cantidad</span>
-              <span>Costo unitario ($)</span>
-              <span>Subtotal</span>
-              <span>Vencimiento</span>
-              <span />
-            </div>
-            {lineas.map((linea, indice) => {
-              const productoSeleccionado = productos.find(
-                (producto) => producto.id === linea.productoId,
-              );
-              const subtotal = linea.cantidad * linea.costoUnitario;
-              return (
-                <div className="linea-factura" key={indice}>
+        <div className="lineas-factura">
+          <div className="lineas-factura__encabezados" aria-hidden="true">
+            <span>Producto</span>
+            <span>Categoría</span>
+            <span>Cantidad</span>
+            <span>Costo unitario ($)</span>
+            <span>Subtotal</span>
+            <span>Vencimiento</span>
+            <span />
+          </div>
+          {lineas.map((linea, indice) => {
+            const productoSeleccionado = productos.find(
+              (producto) => producto.id === linea.productoId,
+            );
+            const subtotal = linea.cantidad * linea.costoUnitario;
+            return (
+              <div className="linea-factura" key={indice}>
+                <div className="producto-compra-control">
                   <select
                     required
-                    value={linea.productoId}
+                    value={
+                      linea.nuevoProducto
+                        ? "__nuevo__"
+                        : (linea.productoId ?? "")
+                    }
                     onChange={(evento) =>
-                      actualizarLinea(indice, {
-                        productoId: evento.target.value,
-                      })
+                      actualizarLinea(
+                        indice,
+                        evento.target.value === "__nuevo__"
+                          ? {
+                              productoId: null,
+                              nuevoProducto: {
+                                sku: "",
+                                nombre: "",
+                                categoria: "",
+                              },
+                            }
+                          : {
+                              productoId: evento.target.value,
+                              nuevoProducto: null,
+                            },
+                      )
                     }
                   >
                     <option value="" disabled>
@@ -1339,72 +1519,121 @@ function FacturaFormulario({
                         {producto.sku} · {producto.nombre}
                       </option>
                     ))}
+                    <option value="__nuevo__">＋ Crear producto nuevo</option>
                   </select>
-                  <span className="categoria-linea-compra">
-                    {productoSeleccionado?.categoria ?? "—"}
-                  </span>
-                  <input
-                    aria-label="Cantidad"
-                    type="number"
-                    min="1"
-                    step="1"
-                    required
-                    value={linea.cantidad}
-                    onChange={(evento) =>
-                      actualizarLinea(indice, {
-                        cantidad: Number(evento.target.value),
-                      })
-                    }
-                    placeholder="Cantidad"
-                  />
-                  <label className="campo-moneda">
-                    <span aria-hidden="true">$</span>
-                    <input
-                      aria-label="Costo unitario en pesos"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      required
-                      value={linea.costoUnitario}
-                      onChange={(evento) =>
-                        actualizarLinea(indice, {
-                          costoUnitario: Number(evento.target.value),
-                        })
-                      }
-                      placeholder="0,00"
-                    />
-                  </label>
-                  <strong className="subtotal-linea-compra">
-                    {dinero(subtotal)}
-                  </strong>
-                  <input
-                    aria-label="Vencimiento"
-                    type="date"
-                    value={linea.fechaVencimiento}
-                    onChange={(evento) =>
-                      actualizarLinea(indice, {
-                        fechaVencimiento: evento.target.value,
-                      })
-                    }
-                  />
-                  <button
-                    type="button"
-                    className="accion-tabla"
-                    aria-label="Quitar producto"
-                    disabled={lineas.length === 1}
-                    onClick={() =>
-                      setLineas((actuales) =>
-                        actuales.filter((_, i) => i !== indice),
-                      )
-                    }
-                  >
-                    ×
-                  </button>
+                  {linea.nuevoProducto && (
+                    <div className="producto-nuevo-campos">
+                      <input
+                        required
+                        aria-label="SKU del nuevo producto"
+                        placeholder="SKU"
+                        value={linea.nuevoProducto.sku}
+                        onChange={(evento) =>
+                          actualizarLinea(indice, {
+                            nuevoProducto: {
+                              ...linea.nuevoProducto!,
+                              sku: evento.target.value,
+                            },
+                          })
+                        }
+                      />
+                      <input
+                        required
+                        aria-label="Nombre del nuevo producto"
+                        placeholder="Nombre"
+                        value={linea.nuevoProducto.nombre}
+                        onChange={(evento) =>
+                          actualizarLinea(indice, {
+                            nuevoProducto: {
+                              ...linea.nuevoProducto!,
+                              nombre: evento.target.value,
+                            },
+                          })
+                        }
+                      />
+                      <input
+                        required
+                        aria-label="Categoría del nuevo producto"
+                        placeholder="Categoría"
+                        value={linea.nuevoProducto.categoria}
+                        onChange={(evento) =>
+                          actualizarLinea(indice, {
+                            nuevoProducto: {
+                              ...linea.nuevoProducto!,
+                              categoria: evento.target.value,
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                  )}
                 </div>
-              );
-            })}
-          </div>
-        )}
+                <span className="categoria-linea-compra">
+                  {linea.nuevoProducto?.categoria ||
+                    productoSeleccionado?.categoria ||
+                    "—"}
+                </span>
+                <input
+                  aria-label="Cantidad"
+                  type="number"
+                  min="1"
+                  step="1"
+                  required
+                  value={linea.cantidad}
+                  onChange={(evento) =>
+                    actualizarLinea(indice, {
+                      cantidad: Number(evento.target.value),
+                    })
+                  }
+                  placeholder="Cantidad"
+                />
+                <label className="campo-moneda">
+                  <span aria-hidden="true">$</span>
+                  <input
+                    aria-label="Costo unitario en pesos"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    required
+                    value={linea.costoUnitario}
+                    onChange={(evento) =>
+                      actualizarLinea(indice, {
+                        costoUnitario: Number(evento.target.value),
+                      })
+                    }
+                    placeholder="0,00"
+                  />
+                </label>
+                <strong className="subtotal-linea-compra">
+                  {dinero(subtotal)}
+                </strong>
+                <input
+                  aria-label="Vencimiento"
+                  type="date"
+                  value={linea.fechaVencimiento}
+                  onChange={(evento) =>
+                    actualizarLinea(indice, {
+                      fechaVencimiento: evento.target.value,
+                    })
+                  }
+                />
+                <button
+                  type="button"
+                  className="accion-tabla"
+                  aria-label="Quitar producto"
+                  disabled={lineas.length === 1}
+                  onClick={() =>
+                    setLineas((actuales) =>
+                      actuales.filter((_, i) => i !== indice),
+                    )
+                  }
+                >
+                  ×
+                </button>
+              </div>
+            );
+          })}
+        </div>
         <div className="formulario-acciones">
           <strong>Total factura: {dinero(total)}</strong>
           <button

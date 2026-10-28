@@ -14,7 +14,12 @@ interface RespuestaRpcCompra {
       p_fecha_compra: string;
       p_notas: string | null;
       p_lineas: Array<{
-        productoId: string;
+        productoId: string | null;
+        nuevoProducto: {
+          sku: string;
+          nombre: string;
+          categoria: string;
+        } | null;
         cantidad: number;
         costoUnitario: number;
         fechaVencimiento: string | null;
@@ -34,7 +39,8 @@ export async function registrarCompra(
     p_fecha_compra: entrada.fechaCompra,
     p_notas: entrada.notas ?? null,
     p_lineas: entrada.lineas.map((linea) => ({
-      productoId: linea.productoId,
+      productoId: linea.productoId ?? null,
+      nuevoProducto: linea.nuevoProducto ?? null,
       cantidad: linea.cantidad,
       costoUnitario: linea.costoUnitario,
       fechaVencimiento: linea.fechaVencimiento ?? null,

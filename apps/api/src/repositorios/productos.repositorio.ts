@@ -1,8 +1,41 @@
 import { supabase } from "../lib/supabase";
 import type {
+  CrearProductoEntrada,
   ProductoInventario,
   StockLoteResumen,
 } from "@distribuidora/tipos-compartidos";
+
+interface RespuestaRpcProducto {
+  rpc: (
+    nombre: "crear_producto",
+    argumentos: {
+      p_sku: string;
+      p_nombre: string;
+      p_categoria: string;
+      p_precio_venta: number;
+      p_markup_pct: number;
+    },
+  ) => Promise<{ data: string | null; error: { message: string } | null }>;
+}
+
+export async function crearProducto(
+  entrada: CrearProductoEntrada,
+): Promise<string> {
+  const clienteRpc = supabase as unknown as RespuestaRpcProducto;
+  const { data, error } = await clienteRpc.rpc("crear_producto", {
+    p_sku: entrada.sku,
+    p_nombre: entrada.nombre,
+    p_categoria: entrada.categoria,
+    p_precio_venta: entrada.precioVenta,
+    p_markup_pct: entrada.markupPct,
+  });
+  if (error) throw new Error(error.message);
+  if (!data)
+    throw new Error(
+      "La base de datos no devolvió el identificador del producto.",
+    );
+  return data;
+}
 
 export async function obtenerProductos(params?: {
   categoria_id?: string;
