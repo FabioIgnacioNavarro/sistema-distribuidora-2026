@@ -911,6 +911,13 @@ function FacturaFormulario({
           <EstadoVacio texto="No hay productos activos. Primero necesitás productos en el catálogo." />
         ) : (
           <div className="lineas-factura">
+            <div className="lineas-factura__encabezados" aria-hidden="true">
+              <span>Producto</span>
+              <span>Cantidad</span>
+              <span>Costo unitario ($)</span>
+              <span>Vencimiento</span>
+              <span />
+            </div>
             {lineas.map((linea, indice) => (
               <div className="linea-factura" key={indice}>
                 <select
@@ -943,20 +950,23 @@ function FacturaFormulario({
                   }
                   placeholder="Cantidad"
                 />
-                <input
-                  aria-label="Costo unitario"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  required
-                  value={linea.costoUnitario}
-                  onChange={(evento) =>
-                    actualizarLinea(indice, {
-                      costoUnitario: Number(evento.target.value),
-                    })
-                  }
-                  placeholder="Costo unitario"
-                />
+                <label className="campo-moneda">
+                  <span aria-hidden="true">$</span>
+                  <input
+                    aria-label="Costo unitario en pesos"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    required
+                    value={linea.costoUnitario}
+                    onChange={(evento) =>
+                      actualizarLinea(indice, {
+                        costoUnitario: Number(evento.target.value),
+                      })
+                    }
+                    placeholder="0,00"
+                  />
+                </label>
                 <input
                   aria-label="Vencimiento"
                   type="date"
