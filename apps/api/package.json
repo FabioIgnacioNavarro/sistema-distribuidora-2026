@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "tsx watch src/servidor.ts",
     "build": "tsc",
-    "start": "node dist/servidor.js",
+    "start": "node dist/apps/api/src/servidor.js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

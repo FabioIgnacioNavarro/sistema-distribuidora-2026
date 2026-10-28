@@ -1,4 +1,4 @@
-import { FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { obtenerProductos } from '../repositorios/productos.repositorio.js';
 
 export async function rutasProductos(servidor: FastifyInstance) {
