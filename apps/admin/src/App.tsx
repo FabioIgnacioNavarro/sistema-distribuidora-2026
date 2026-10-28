@@ -11,6 +11,8 @@ import {
   obtenerCompras,
   obtenerLotes,
   obtenerProductos,
+  obtenerEstadoReinicio,
+  reiniciarDatosOperativos,
 } from "./repositorios/api.repositorio";
 
 type Vista =
@@ -53,6 +55,10 @@ export default function App(): JSX.Element {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lotesAbiertos, setLotesAbiertos] = useState<Set<string>>(new Set());
+  const [reinicioHabilitado, setReinicioHabilitado] = useState(false);
+  const [modalReinicio, setModalReinicio] = useState(false);
+  const [confirmacion, setConfirmacion] = useState("");
+  const [reiniciando, setReiniciando] = useState(false);
 
   const cargarDatos = useCallback(async (): Promise<void> => {
     setError(null);
@@ -79,7 +85,32 @@ export default function App(): JSX.Element {
 
   useEffect(() => {
     void cargarDatos();
+    void obtenerEstadoReinicio()
+      .then(setReinicioHabilitado)
+      .catch(() => setReinicioHabilitado(false));
   }, [cargarDatos]);
+
+  const confirmarReinicio = async (
+    evento: FormEvent<HTMLFormElement>,
+  ): Promise<void> => {
+    evento.preventDefault();
+    setReiniciando(true);
+    setError(null);
+    try {
+      await reiniciarDatosOperativos({ confirmacion });
+      setModalReinicio(false);
+      setConfirmacion("");
+      await cargarDatos();
+    } catch (errorReinicio) {
+      setError(
+        errorReinicio instanceof Error
+          ? errorReinicio.message
+          : "No se pudo reiniciar la información.",
+      );
+    } finally {
+      setReiniciando(false);
+    }
+  };
 
   const guardarFactura = async (
     entrada: RegistrarCompraEntrada,
@@ -106,7 +137,10 @@ export default function App(): JSX.Element {
     setError(null);
   };
   const categorias = useMemo(
-    () => [...new Set(productos.map((producto) => producto.categoria))].sort(),
+    () =>
+      Array.from(
+        new Set(productos.map((producto) => producto.categoria)),
+      ).sort(),
     [productos],
   );
 
@@ -227,6 +261,8 @@ export default function App(): JSX.Element {
                 productos={productos}
                 lotes={lotes}
                 compras={compras}
+                reinicioHabilitado={reinicioHabilitado}
+                onAbrirReinicio={() => setModalReinicio(true)}
               />
             )}
             {vista === "precios" && (
@@ -259,6 +295,71 @@ export default function App(): JSX.Element {
           </>
         )}
       </main>
+      {modalReinicio && (
+        <div
+          className="modal-fondo"
+          role="presentation"
+          onMouseDown={(evento) => {
+            if (evento.target === evento.currentTarget && !reiniciando)
+              setModalReinicio(false);
+          }}
+        >
+          <section
+            className="modal-tarjeta modal-reinicio"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titulo-reinicio"
+          >
+            <button
+              className="modal-cerrar"
+              aria-label="Cerrar"
+              disabled={reiniciando}
+              onClick={() => setModalReinicio(false)}
+            >
+              ×
+            </button>
+            <p className="eyebrow">Acción de desarrollo</p>
+            <h2 id="titulo-reinicio">Reinicio de fábrica</h2>
+            <p>
+              Se eliminarán todas las compras y facturas, lotes, ventas y
+              pedidos, cobranzas, rutas, ajustes de inventario y auditoría. El
+              stock de los productos volverá a cero.
+            </p>
+            <p>
+              Se conservarán los productos, categorías, clientes, usuarios y
+              configuración.
+            </p>
+            <form onSubmit={(evento) => void confirmarReinicio(evento)}>
+              <label htmlFor="confirmacion-reinicio">
+                Escribí <strong>REINICIAR</strong> para confirmar
+              </label>
+              <input
+                id="confirmacion-reinicio"
+                value={confirmacion}
+                onChange={(evento) => setConfirmacion(evento.target.value)}
+                autoComplete="off"
+              />
+              <div className="formulario-acciones">
+                <button
+                  type="button"
+                  className="boton boton--secundario"
+                  disabled={reiniciando}
+                  onClick={() => setModalReinicio(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="boton boton--peligro"
+                  disabled={confirmacion !== "REINICIAR" || reiniciando}
+                >
+                  {reiniciando ? "Reiniciando…" : "Borrar datos operativos"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
@@ -302,11 +403,15 @@ function Inicio({
   productos,
   lotes,
   compras,
+  reinicioHabilitado,
+  onAbrirReinicio,
 }: {
   navegar: (vista: Vista) => void;
   productos: ProductoInventario[];
   lotes: LoteDetalle[];
   compras: CompraHistorial[];
+  reinicioHabilitado: boolean;
+  onAbrirReinicio: () => void;
 }): JSX.Element {
   const unidades = productos.reduce(
     (total, producto) => total + producto.stockTotal,
@@ -334,12 +439,26 @@ function Inicio({
             Resumen de la operación de Fontana Distribuciones.
           </p>
         </div>
-        <button
-          className="boton boton--primario"
-          onClick={() => navegar("compras")}
-        >
-          ＋ Registrar compra
-        </button>
+        <div className="acciones-rapidas">
+          <button
+            className="boton boton--primario"
+            onClick={() => navegar("compras")}
+          >
+            ＋ Registrar compra
+          </button>
+          <button
+            className="boton boton--peligro"
+            disabled={!reinicioHabilitado}
+            title={
+              reinicioHabilitado
+                ? undefined
+                : "Habilitalo desde la configuración local de la API"
+            }
+            onClick={onAbrirReinicio}
+          >
+            Reinicio de fábrica
+          </button>
+        </div>
       </div>
       <div className="tarjetas">
         <article className="tarjeta tarjeta--verde">

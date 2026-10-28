@@ -1,11 +1,13 @@
 import Fastify from "fastify";
 import { rutasProductos } from "./rutas/productos.ruta.js";
 import { rutasCompras } from "./rutas/compras.ruta.js";
+import { rutasReinicio } from "./rutas/reinicio.ruta.js";
 
 const servidor = Fastify({ logger: true });
 
 servidor.register(rutasProductos);
 servidor.register(rutasCompras);
+servidor.register(rutasReinicio);
 
 servidor.get("/api/salud", async () => ({
   estado: "ok",

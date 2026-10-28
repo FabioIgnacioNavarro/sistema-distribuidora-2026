@@ -12,6 +12,8 @@
 
 **Ajustes de inventario:** El Administrador puede realizar ajustes de stock manuales (merma, daño, corrección de inventario) con motivo obligatorio. Los ajustes negativos afectan al lote más antiguo disponible (FIFO).
 
+**Reinicio de fábrica para pruebas:** En desarrollo, el Administrador puede borrar compras/facturas, lotes, pedidos y sus líneas, cobranzas, rutas y entregas, ajustes de inventario y auditoría. El stock almacenado de los productos vuelve a cero. Se conservan productos, categorías, clientes, usuarios y configuración. La función solo se habilita con `HABILITAR_REINICIO_DE_FABRICA=true` fuera de producción; la API exige confirmación explícita. No es una operación disponible en producción.
+
 **Descuento de stock:** El stock se descuenta de los lotes (FIFO) en el momento que el pedido pasa a estado "Preparado", no al crearse. Esto evita bloquear stock innecesariamente si el pedido se cancela antes de prepararse.
 
 ## Ventas y Rentabilidad
@@ -122,5 +124,6 @@
 10. Un pedido puede tener múltiples cobranzas y conserva el historial completo de esos movimientos
 
 ---
-*Documento versión 1.0 — Última actualización: Agosto 2026*
-*Los datos obligatorios por entidad se definirán en el Modelo Relacional (MR).*
+
+_Documento versión 1.0 — Última actualización: Agosto 2026_
+_Los datos obligatorios por entidad se definirán en el Modelo Relacional (MR)._

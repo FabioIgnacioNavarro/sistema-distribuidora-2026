@@ -4,6 +4,9 @@ import {
   productoInventarioSchema,
   registrarCompraRespuestaSchema,
   registrarCompraSchema,
+  confirmacionReinicioSchema,
+  estadoReinicioSchema,
+  respuestaReinicioSchema,
   type CompraHistorial,
   type LoteDetalle,
   type ProductoInventario,
@@ -60,4 +63,23 @@ export async function crearCompra(entradaSinValidar: unknown): Promise<string> {
     }),
   );
   return respuesta.id;
+}
+
+export async function obtenerEstadoReinicio(): Promise<boolean> {
+  const respuesta = estadoReinicioSchema.parse(
+    await consultarApi("/api/reinicio-fabrica/estado"),
+  );
+  return respuesta.habilitado;
+}
+
+export async function reiniciarDatosOperativos(
+  entradaSinValidar: unknown,
+): Promise<void> {
+  const entrada = confirmacionReinicioSchema.parse(entradaSinValidar);
+  respuestaReinicioSchema.parse(
+    await consultarApi("/api/reinicio-fabrica", {
+      method: "POST",
+      body: JSON.stringify(entrada),
+    }),
+  );
 }
