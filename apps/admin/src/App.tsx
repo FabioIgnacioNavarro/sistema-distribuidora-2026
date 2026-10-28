@@ -1758,17 +1758,26 @@ function FacturaFormulario({
             return (
               <div className="linea-factura" key={indice}>
                 <div className="producto-compra-control">
-                  <select
-                    required
-                    value={
+                  <BuscadorLista
+                    opciones={[
+                      {
+                        valor: "__nuevo__",
+                        etiqueta: "＋ Crear producto nuevo",
+                      },
+                      ...productos.map((producto) => ({
+                        valor: producto.id,
+                        etiqueta: `${producto.sku} · ${producto.nombre}`,
+                      })),
+                    ]}
+                    valor={
                       linea.nuevoProducto
                         ? "__nuevo__"
                         : (linea.productoId ?? "")
                     }
-                    onChange={(evento) =>
+                    onCambiar={(valor) =>
                       actualizarLinea(
                         indice,
-                        evento.target.value === "__nuevo__"
+                        valor === "__nuevo__"
                           ? {
                               productoId: null,
                               nuevoProducto: {
@@ -1777,23 +1786,11 @@ function FacturaFormulario({
                                 subcategoriaCodigo: null,
                               },
                             }
-                          : {
-                              productoId: evento.target.value,
-                              nuevoProducto: null,
-                            },
+                          : { productoId: valor, nuevoProducto: null },
                       )
                     }
-                  >
-                    <option value="" disabled>
-                      Seleccionar producto
-                    </option>
-                    {productos.map((producto) => (
-                      <option key={producto.id} value={producto.id}>
-                        {producto.sku} · {producto.nombre}
-                      </option>
-                    ))}
-                    <option value="__nuevo__">＋ Crear producto nuevo</option>
-                  </select>
+                    placeholder="Buscar producto..."
+                  />
                   {linea.nuevoProducto && (
                     <div className="producto-nuevo-campos">
                       <input
