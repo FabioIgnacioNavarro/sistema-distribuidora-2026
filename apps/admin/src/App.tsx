@@ -1263,7 +1263,9 @@ function ListaPrecios({
                       <td>
                         {producto.markupRealMin === null
                           ? "—"
-                          : `${porcentaje(producto.markupRealMin)} — ${porcentaje(producto.markupRealMax ?? producto.markupRealMin)}`}
+                          : producto.cantidadLotesActivos === 1
+                            ? porcentaje(producto.markupRealMin)
+                            : `${porcentaje(producto.markupRealMin)} — ${porcentaje(producto.markupRealMax ?? producto.markupRealMin)}`}
                       </td>
                     </>
                   );

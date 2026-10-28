@@ -9,6 +9,7 @@ export const productoInventarioSchema = z.object({
   markupPct: z.number(),
   markupRealMin: z.number().nullable(),
   markupRealMax: z.number().nullable(),
+  cantidadLotesActivos: z.number().int().nonnegative(),
   stockTotal: z.number().int(),
   estaActivo: z.boolean(),
 });
@@ -38,6 +39,7 @@ export interface ProductoInventario {
   markupPct: number;
   markupRealMin: number | null;
   markupRealMax: number | null;
+  cantidadLotesActivos: number;
   stockTotal: number;
   estaActivo: boolean;
 }

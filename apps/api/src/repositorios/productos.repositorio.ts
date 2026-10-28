@@ -73,6 +73,7 @@ export async function obtenerProductos(params?: {
     markupPct: Number(producto.markup_pct),
     markupRealMin: null,
     markupRealMax: null,
+    cantidadLotesActivos: 0,
     stockTotal: producto.stock_total,
     estaActivo: producto.esta_activo ?? true,
   }));

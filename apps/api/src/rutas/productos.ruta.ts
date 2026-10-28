@@ -24,12 +24,10 @@ export async function rutasProductos(servidor: FastifyInstance) {
       return reply.send({ actualizado: true });
     } catch (error) {
       if (error instanceof ZodError)
-        return reply
-          .code(400)
-          .send({
-            mensaje: "Los precios no son válidos",
-            errores: error.issues,
-          });
+        return reply.code(400).send({
+          mensaje: "Los precios no son válidos",
+          errores: error.issues,
+        });
       throw error;
     }
   });
@@ -81,6 +79,7 @@ export async function rutasProductos(servidor: FastifyInstance) {
         ...producto,
         markupRealMin: Math.min(...markups),
         markupRealMax: Math.max(...markups),
+        cantidadLotesActivos: costos.length,
       };
     });
   });
