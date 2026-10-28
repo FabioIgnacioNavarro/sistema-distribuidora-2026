@@ -1,5 +1,8 @@
 import { supabase } from "../lib/supabase";
-import type { ProductoInventario } from "@distribuidora/tipos-compartidos";
+import type {
+  ProductoInventario,
+  StockLoteResumen,
+} from "@distribuidora/tipos-compartidos";
 
 export async function obtenerProductos(params?: {
   categoria_id?: string;
@@ -37,4 +40,36 @@ export async function obtenerProductos(params?: {
     stockTotal: producto.stock_total,
     estaActivo: producto.esta_activo ?? true,
   }));
+}
+
+export async function obtenerStockDesdeLotes(): Promise<StockLoteResumen[]> {
+  const tamañoPagina = 1000;
+  const resumen: StockLoteResumen[] = [];
+  let desde = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("lotes")
+      .select("producto_id, cantidad_restante")
+      .order("id", { ascending: true })
+      .range(desde, desde + tamañoPagina - 1);
+
+    if (error) throw new Error(error.message);
+    const lotes = data ?? [];
+    resumen.push(
+      ...lotes.flatMap((lote) =>
+        lote.producto_id
+          ? [
+              {
+                productoId: lote.producto_id,
+                cantidadRestante: lote.cantidad_restante,
+              },
+            ]
+          : [],
+      ),
+    );
+
+    if (lotes.length < tamañoPagina) return resumen;
+    desde += tamañoPagina;
+  }
 }

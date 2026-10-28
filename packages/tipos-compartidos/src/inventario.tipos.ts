@@ -54,3 +54,8 @@ export interface LoteDetalle extends LoteInventario {
   proveedor: string | null;
   numeroFactura: string | null;
 }
+
+export interface StockLoteResumen {
+  productoId: string;
+  cantidadRestante: number;
+}
