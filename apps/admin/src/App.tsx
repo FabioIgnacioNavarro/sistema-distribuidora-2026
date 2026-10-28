@@ -1,4 +1,11 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { FormEvent, ReactNode } from "react";
 import type {
   CompraHistorial,
@@ -680,6 +687,20 @@ function BuscadorLista({
 }): JSX.Element {
   const [abierto, setAbierto] = useState(false);
   const [texto, setTexto] = useState("");
+  const referencia = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const cerrarAlHacerClickFuera = (evento: MouseEvent): void => {
+      if (
+        referencia.current &&
+        !referencia.current.contains(evento.target as Node)
+      ) {
+        setAbierto(false);
+      }
+    };
+    document.addEventListener("mousedown", cerrarAlHacerClickFuera);
+    return () =>
+      document.removeEventListener("mousedown", cerrarAlHacerClickFuera);
+  }, []);
   const seleccionada = opciones.find((opcion) => opcion.valor === valor);
   const coincidencias = opciones
     .filter((opcion) =>
@@ -687,7 +708,7 @@ function BuscadorLista({
     )
     .slice(0, 20);
   return (
-    <div className="buscador-lista">
+    <div className="buscador-lista" ref={referencia}>
       <input
         value={abierto ? texto : (seleccionada?.etiqueta ?? "")}
         placeholder={placeholder}
