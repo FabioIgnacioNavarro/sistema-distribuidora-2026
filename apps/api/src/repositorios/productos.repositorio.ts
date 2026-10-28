@@ -1,11 +1,11 @@
 import { supabase } from '../lib/supabase';
-import type { Producto } from '@distribuidora/tipos-compartidos';
+import type { Tables } from '@distribuidora/tipos-compartidos';
 
 export async function obtenerProductos(params?: {
   categoria_id?: string;
   busqueda?: string;
   solo_activos?: boolean;
-}): Promise<Producto[]> {
+}): Promise<Tables<'productos'>[]> {
   let query = supabase.from('productos').select('*');
 
   if (params?.categoria_id) {
@@ -25,5 +25,5 @@ export async function obtenerProductos(params?: {
   const { data, error } = await query;
 
   if (error) throw new Error(error.message);
-  return data as Producto[];
+  return data ?? [];
 }
