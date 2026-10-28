@@ -53,6 +53,42 @@ const fechaHoy = (): string => {
   return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`;
 };
 
+const REGISTROS_POR_PAGINA = 20;
+
+function Paginador({
+  total,
+  pagina,
+  onCambiar,
+}: {
+  total: number;
+  pagina: number;
+  onCambiar: (pagina: number) => void;
+}): JSX.Element | null {
+  const paginas = Math.max(1, Math.ceil(total / REGISTROS_POR_PAGINA));
+  if (total <= REGISTROS_POR_PAGINA) return null;
+  return (
+    <div className="paginador" aria-label="Paginación">
+      <button
+        className="boton boton--secundario"
+        disabled={pagina === 1}
+        onClick={() => onCambiar(pagina - 1)}
+      >
+        ← Anterior
+      </button>
+      <span>
+        Página {pagina} de {paginas}
+      </span>
+      <button
+        className="boton boton--secundario"
+        disabled={pagina === paginas}
+        onClick={() => onCambiar(pagina + 1)}
+      >
+        Siguiente →
+      </button>
+    </div>
+  );
+}
+
 export default function App(): JSX.Element {
   const [vista, setVista] = useState<Vista>("inicio");
   const [oscuro, setOscuro] = useState(false);
@@ -642,6 +678,7 @@ function TablaProductos({
   const [categoria, setCategoria] = useState("");
   const [ordenPrecio, setOrdenPrecio] = useState("ninguno");
   const [ordenStock, setOrdenStock] = useState("ninguno");
+  const [pagina, setPagina] = useState(1);
   const lista = productos
     .filter(
       (producto) =>
@@ -726,105 +763,111 @@ function TablaProductos({
             </tr>
           </thead>
           <tbody>
-            {lista.map((producto) => {
-              const propios = lotesPorProducto.get(producto.id) ?? [];
-              const abierto = lotesAbiertos.has(producto.id);
-              return (
-                <Fragment key={producto.id}>
-                  <tr
-                    className={
-                      abierto
-                        ? "fila-producto fila-producto--abierta"
-                        : "fila-producto"
-                    }
-                  >
-                    <td>
-                      <button
-                        className="expansor"
-                        aria-expanded={abierto}
-                        onClick={() => alternar(producto.id)}
-                      >
-                        {abierto ? "⌄" : "›"}
-                      </button>{" "}
-                      <strong>{producto.sku}</strong>
-                    </td>
-                    <td>{producto.nombre}</td>
-                    <td>
-                      <span className="etiqueta-categoria">
-                        {producto.categoria}
-                      </span>
-                    </td>
-                    <td>
-                      <strong>{producto.stockTotal} u.</strong>
-                    </td>
-                    <td>{dinero(producto.precioVenta)}</td>
-                  </tr>
-                  {abierto &&
-                    (propios.length > 0 ? (
-                      propios.map((lote) => (
-                        <tr className="fila-lote" key={lote.id}>
-                          <td>↳ {lote.codigoLote}</td>
-                          <td colSpan={2}>
-                            Cantidad disponible · compra{" "}
-                            {fechaVisible(lote.recibidoEn)}
-                          </td>
-                          <td>
-                            {(() => {
-                              const porcentajeRestante =
-                                lote.cantidadOriginal > 0
-                                  ? (lote.cantidadRestante /
-                                      lote.cantidadOriginal) *
-                                    100
-                                  : 0;
-                              const colorBarra =
-                                porcentajeRestante > 70
-                                  ? "barra-progreso-verde"
-                                  : porcentajeRestante > 30
-                                    ? "barra-progreso-ambar"
-                                    : "barra-progreso-rojo";
-                              return (
-                                <div className="progreso-lote-en-linea progreso-stock-producto">
-                                  <strong>{lote.cantidadRestante} u.</strong>
-                                  <div
-                                    className="barra-progreso-lote"
-                                    role="progressbar"
-                                    aria-label={`${lote.cantidadRestante} de ${lote.cantidadOriginal} unidades restantes`}
-                                    aria-valuemin={0}
-                                    aria-valuemax={lote.cantidadOriginal}
-                                    aria-valuenow={lote.cantidadRestante}
-                                  >
-                                    <span
-                                      className={`barra-progreso-lote-relleno ${colorBarra}`}
-                                      style={{
-                                        width: `${porcentajeRestante}%`,
-                                      }}
-                                    />
+            {lista
+              .slice(
+                (pagina - 1) * REGISTROS_POR_PAGINA,
+                pagina * REGISTROS_POR_PAGINA,
+              )
+              .map((producto) => {
+                const propios = lotesPorProducto.get(producto.id) ?? [];
+                const abierto = lotesAbiertos.has(producto.id);
+                return (
+                  <Fragment key={producto.id}>
+                    <tr
+                      className={
+                        abierto
+                          ? "fila-producto fila-producto--abierta"
+                          : "fila-producto"
+                      }
+                    >
+                      <td>
+                        <button
+                          className="expansor"
+                          aria-expanded={abierto}
+                          onClick={() => alternar(producto.id)}
+                        >
+                          {abierto ? "⌄" : "›"}
+                        </button>{" "}
+                        <strong>{producto.sku}</strong>
+                      </td>
+                      <td>{producto.nombre}</td>
+                      <td>
+                        <span className="etiqueta-categoria">
+                          {producto.categoria}
+                        </span>
+                      </td>
+                      <td>
+                        <strong>{producto.stockTotal} u.</strong>
+                      </td>
+                      <td>{dinero(producto.precioVenta)}</td>
+                    </tr>
+                    {abierto &&
+                      (propios.length > 0 ? (
+                        propios.map((lote) => (
+                          <tr className="fila-lote" key={lote.id}>
+                            <td>↳ {lote.codigoLote}</td>
+                            <td colSpan={2}>
+                              Cantidad disponible · compra{" "}
+                              {fechaVisible(lote.recibidoEn)}
+                            </td>
+                            <td>
+                              {(() => {
+                                const porcentajeRestante =
+                                  lote.cantidadOriginal > 0
+                                    ? (lote.cantidadRestante /
+                                        lote.cantidadOriginal) *
+                                      100
+                                    : 0;
+                                const colorBarra =
+                                  porcentajeRestante > 70
+                                    ? "barra-progreso-verde"
+                                    : porcentajeRestante > 30
+                                      ? "barra-progreso-ambar"
+                                      : "barra-progreso-rojo";
+                                return (
+                                  <div className="progreso-lote-en-linea progreso-stock-producto">
+                                    <strong>{lote.cantidadRestante} u.</strong>
+                                    <div
+                                      className="barra-progreso-lote"
+                                      role="progressbar"
+                                      aria-label={`${lote.cantidadRestante} de ${lote.cantidadOriginal} unidades restantes`}
+                                      aria-valuemin={0}
+                                      aria-valuemax={lote.cantidadOriginal}
+                                      aria-valuenow={lote.cantidadRestante}
+                                    >
+                                      <span
+                                        className={`barra-progreso-lote-relleno ${colorBarra}`}
+                                        style={{
+                                          width: `${porcentajeRestante}%`,
+                                        }}
+                                      />
+                                    </div>
+                                    <span className="texto-progreso-stock">
+                                      {Math.round(porcentajeRestante)}%
+                                    </span>
                                   </div>
-                                  <span className="texto-progreso-stock">
-                                    {Math.round(porcentajeRestante)}%
-                                  </span>
-                                </div>
-                              );
-                            })()}
+                                );
+                              })()}
+                            </td>
+                            <td>—</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr
+                          className="fila-lote"
+                          key={`${producto.id}-sin-lotes`}
+                        >
+                          <td colSpan={5}>
+                            Este producto todavía no tiene lotes registrados.
                           </td>
-                          <td>—</td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr
-                        className="fila-lote"
-                        key={`${producto.id}-sin-lotes`}
-                      >
-                        <td colSpan={5}>
-                          Este producto todavía no tiene lotes registrados.
-                        </td>
-                      </tr>
-                    ))}
-                </Fragment>
-              );
-            })}
+                      ))}
+                  </Fragment>
+                );
+              })}
           </tbody>
         </table>
+        <Paginador total={lista.length} pagina={pagina} onCambiar={setPagina} />
         {lista.length === 0 && (
           <EstadoVacio texto="No hay productos para mostrar." />
         )}
@@ -849,6 +892,7 @@ function TablaLotes({
     "recientes",
   );
   const [mostrarAgotados, setMostrarAgotados] = useState(false);
+  const [pagina, setPagina] = useState(1);
   const [abiertos, setAbiertos] = useState<Set<string>>(new Set());
   const productosPorId = new Map(
     productos.map((producto) => [producto.id, producto]),
@@ -985,111 +1029,125 @@ function TablaLotes({
             </tr>
           </thead>
           <tbody>
-            {gruposFiltrados.map((grupo) => {
-              const abierto = abiertos.has(grupo.clave);
-              const activo = grupo.cantidadRestante > 0;
-              return (
-                <Fragment key={grupo.clave}>
-                  <tr
-                    className={
-                      abierto
-                        ? "fila-producto fila-producto--abierta"
-                        : "fila-producto"
-                    }
-                  >
-                    <td>
-                      <button
-                        className="expansor"
-                        aria-expanded={abierto}
-                        onClick={() => alternar(grupo.clave)}
-                      >
-                        {abierto ? "⌄" : "›"}
-                      </button>{" "}
-                      #{grupo.lineas[0]?.id.slice(0, 8).toUpperCase()}
-                    </td>
-                    <td>{grupo.codigo}</td>
-                    <td>{grupo.numeroFactura ?? "—"}</td>
-                    <td>{grupo.proveedor ?? "Proveedor sin nombre"}</td>
-                    <td>
-                      {grupo.recibidoEn ? fechaVisible(grupo.recibidoEn) : "—"}
-                    </td>
-                    <td>
-                      <span
-                        className={
-                          activo
-                            ? "estado estado--activo"
-                            : "estado estado--agotado"
-                        }
-                      >
-                        {activo ? "Activo" : "Agotado"}
-                      </span>
-                    </td>
-                  </tr>
-                  {abierto &&
-                    grupo.lineas.map((lote) => {
-                      const producto = productosPorId.get(lote.productoId);
-                      const porcentajeRestante =
-                        lote.cantidadOriginal > 0
-                          ? (lote.cantidadRestante / lote.cantidadOriginal) *
-                            100
-                          : 0;
-                      const colorBarra =
-                        porcentajeRestante > 70
-                          ? "barra-progreso-verde"
-                          : porcentajeRestante > 30
-                            ? "barra-progreso-ambar"
-                            : "barra-progreso-rojo";
-                      return (
-                        <tr className="fila-lote" key={lote.id}>
-                          <td>↳ {lote.productoSku}</td>
-                          <td>
-                            <strong>{lote.productoNombre}</strong>
-                          </td>
-                          <td>—</td>
-                          <td>{producto?.categoria ?? "Sin categoría"}</td>
-                          <td>
-                            <div className="progreso-lote-en-linea">
-                              <div
-                                className="barra-progreso-lote"
-                                role="progressbar"
-                                aria-label={`${lote.cantidadRestante} de ${lote.cantidadOriginal} unidades restantes`}
-                                aria-valuemin={0}
-                                aria-valuemax={lote.cantidadOriginal}
-                                aria-valuenow={lote.cantidadRestante}
-                              >
-                                <span
-                                  className={`barra-progreso-lote-relleno ${colorBarra}`}
-                                  style={{ width: `${porcentajeRestante}%` }}
-                                />
-                              </div>
-                              <strong>
-                                {lote.cantidadRestante} /{" "}
-                                {lote.cantidadOriginal} restantes
-                              </strong>
-                            </div>
-                          </td>
-                          <td>
-                            {dinero(lote.costoUnitario)} · subtotal{" "}
-                            {dinero(lote.cantidadOriginal * lote.costoUnitario)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  {abierto && (
-                    <tr className="fila-total" key={`${grupo.clave}-total`}>
-                      <td colSpan={5} className="texto-total-lote">
-                        Costo total del lote
+            {gruposFiltrados
+              .slice(
+                (pagina - 1) * REGISTROS_POR_PAGINA,
+                pagina * REGISTROS_POR_PAGINA,
+              )
+              .map((grupo) => {
+                const abierto = abiertos.has(grupo.clave);
+                const activo = grupo.cantidadRestante > 0;
+                return (
+                  <Fragment key={grupo.clave}>
+                    <tr
+                      className={
+                        abierto
+                          ? "fila-producto fila-producto--abierta"
+                          : "fila-producto"
+                      }
+                    >
+                      <td>
+                        <button
+                          className="expansor"
+                          aria-expanded={abierto}
+                          onClick={() => alternar(grupo.clave)}
+                        >
+                          {abierto ? "⌄" : "›"}
+                        </button>{" "}
+                        #{grupo.lineas[0]?.id.slice(0, 8).toUpperCase()}
+                      </td>
+                      <td>{grupo.codigo}</td>
+                      <td>{grupo.numeroFactura ?? "—"}</td>
+                      <td>{grupo.proveedor ?? "Proveedor sin nombre"}</td>
+                      <td>
+                        {grupo.recibidoEn
+                          ? fechaVisible(grupo.recibidoEn)
+                          : "—"}
                       </td>
                       <td>
-                        <strong>{dinero(grupo.costoTotal)}</strong>
+                        <span
+                          className={
+                            activo
+                              ? "estado estado--activo"
+                              : "estado estado--agotado"
+                          }
+                        >
+                          {activo ? "Activo" : "Agotado"}
+                        </span>
                       </td>
                     </tr>
-                  )}
-                </Fragment>
-              );
-            })}
+                    {abierto &&
+                      grupo.lineas.map((lote) => {
+                        const producto = productosPorId.get(lote.productoId);
+                        const porcentajeRestante =
+                          lote.cantidadOriginal > 0
+                            ? (lote.cantidadRestante / lote.cantidadOriginal) *
+                              100
+                            : 0;
+                        const colorBarra =
+                          porcentajeRestante > 70
+                            ? "barra-progreso-verde"
+                            : porcentajeRestante > 30
+                              ? "barra-progreso-ambar"
+                              : "barra-progreso-rojo";
+                        return (
+                          <tr className="fila-lote" key={lote.id}>
+                            <td>↳ {lote.productoSku}</td>
+                            <td>
+                              <strong>{lote.productoNombre}</strong>
+                            </td>
+                            <td>—</td>
+                            <td>{producto?.categoria ?? "Sin categoría"}</td>
+                            <td>
+                              <div className="progreso-lote-en-linea">
+                                <div
+                                  className="barra-progreso-lote"
+                                  role="progressbar"
+                                  aria-label={`${lote.cantidadRestante} de ${lote.cantidadOriginal} unidades restantes`}
+                                  aria-valuemin={0}
+                                  aria-valuemax={lote.cantidadOriginal}
+                                  aria-valuenow={lote.cantidadRestante}
+                                >
+                                  <span
+                                    className={`barra-progreso-lote-relleno ${colorBarra}`}
+                                    style={{ width: `${porcentajeRestante}%` }}
+                                  />
+                                </div>
+                                <strong>
+                                  {lote.cantidadRestante} /{" "}
+                                  {lote.cantidadOriginal} restantes
+                                </strong>
+                              </div>
+                            </td>
+                            <td>
+                              {dinero(lote.costoUnitario)} · subtotal{" "}
+                              {dinero(
+                                lote.cantidadOriginal * lote.costoUnitario,
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    {abierto && (
+                      <tr className="fila-total" key={`${grupo.clave}-total`}>
+                        <td colSpan={5} className="texto-total-lote">
+                          Costo total del lote
+                        </td>
+                        <td>
+                          <strong>{dinero(grupo.costoTotal)}</strong>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
           </tbody>
         </table>
+        <Paginador
+          total={gruposFiltrados.length}
+          pagina={pagina}
+          onCambiar={setPagina}
+        />
         {gruposFiltrados.length === 0 && (
           <EstadoVacio texto="No hay lotes que coincidan con los filtros." />
         )}
@@ -1117,6 +1175,7 @@ function ListaPrecios({
   const [categoria, setCategoria] = useState("");
   const [ordenMarkup, setOrdenMarkup] = useState("ninguno");
   const [ordenStock, setOrdenStock] = useState("ninguno");
+  const [pagina, setPagina] = useState(1);
   const [ediciones, setEdiciones] = useState<
     Record<string, { precioVenta: number; markupPct: number }>
   >({});
@@ -1197,84 +1256,93 @@ function ListaPrecios({
             </tr>
           </thead>
           <tbody>
-            {lista.map((producto) => (
-              <tr key={producto.id}>
-                {(() => {
-                  const edicion = ediciones[producto.id] ?? {
-                    precioVenta: producto.precioVenta,
-                    markupPct: producto.markupPct,
-                  };
-                  const cambiar = (cambio: Partial<typeof edicion>): void =>
-                    setEdiciones((actuales) => ({
-                      ...actuales,
-                      [producto.id]: { ...edicion, ...cambio },
-                    }));
-                  return (
-                    <>
-                      <td>{producto.sku}</td>
-                      <td>
-                        <strong>{producto.nombre}</strong>
-                      </td>
-                      <td>{producto.categoria}</td>
-                      <td>{producto.stockTotal}</td>
-                      <td>
-                        <input
-                          className="campo-tabla"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={edicion.precioVenta}
-                          onChange={(evento) =>
-                            cambiar({
-                              precioVenta: Number(evento.target.value),
-                            })
-                          }
-                          onBlur={() =>
-                            void onActualizarPrecios(
-                              producto.id,
-                              edicion.precioVenta,
-                              edicion.markupPct,
-                            )
-                          }
-                          aria-label={`Precio público de ${producto.nombre}`}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          className="campo-tabla"
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="0.01"
-                          value={edicion.markupPct}
-                          onChange={(evento) =>
-                            cambiar({ markupPct: Number(evento.target.value) })
-                          }
-                          onBlur={() =>
-                            void onActualizarPrecios(
-                              producto.id,
-                              edicion.precioVenta,
-                              edicion.markupPct,
-                            )
-                          }
-                          aria-label={`Markup deseado de ${producto.nombre}`}
-                        />
-                      </td>
-                      <td>
-                        {producto.markupRealMin === null
-                          ? "—"
-                          : producto.cantidadLotesActivos === 1 ||
-                              producto.markupRealMin === producto.markupRealMax
-                            ? porcentaje(producto.markupRealMin)
-                            : `${porcentaje(producto.markupRealMin)} — ${porcentaje(producto.markupRealMax ?? producto.markupRealMin)}`}
-                      </td>
-                    </>
-                  );
-                })()}
-              </tr>
-            ))}
+            {lista
+              .slice(
+                (pagina - 1) * REGISTROS_POR_PAGINA,
+                pagina * REGISTROS_POR_PAGINA,
+              )
+              .map((producto) => (
+                <tr key={producto.id}>
+                  {(() => {
+                    const edicion = ediciones[producto.id] ?? {
+                      precioVenta: producto.precioVenta,
+                      markupPct: producto.markupPct,
+                    };
+                    const cambiar = (cambio: Partial<typeof edicion>): void =>
+                      setEdiciones((actuales) => ({
+                        ...actuales,
+                        [producto.id]: { ...edicion, ...cambio },
+                      }));
+                    return (
+                      <>
+                        <td>{producto.sku}</td>
+                        <td>
+                          <strong>{producto.nombre}</strong>
+                        </td>
+                        <td>{producto.categoria}</td>
+                        <td>{producto.stockTotal}</td>
+                        <td>
+                          <input
+                            className="campo-tabla"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={edicion.precioVenta}
+                            onChange={(evento) =>
+                              cambiar({
+                                precioVenta: Number(evento.target.value),
+                              })
+                            }
+                            onBlur={() =>
+                              void onActualizarPrecios(
+                                producto.id,
+                                edicion.precioVenta,
+                                edicion.markupPct,
+                              )
+                            }
+                            aria-label={`Precio público de ${producto.nombre}`}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="campo-tabla"
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            value={edicion.markupPct}
+                            onChange={(evento) =>
+                              cambiar({
+                                markupPct: Number(evento.target.value),
+                              })
+                            }
+                            onBlur={() =>
+                              void onActualizarPrecios(
+                                producto.id,
+                                edicion.precioVenta,
+                                edicion.markupPct,
+                              )
+                            }
+                            aria-label={`Markup deseado de ${producto.nombre}`}
+                          />
+                        </td>
+                        <td>
+                          {producto.markupRealMin === null
+                            ? "—"
+                            : producto.cantidadLotesActivos === 1 ||
+                                producto.markupRealMin ===
+                                  producto.markupRealMax
+                              ? porcentaje(producto.markupRealMin)
+                              : `${porcentaje(producto.markupRealMin)} — ${porcentaje(producto.markupRealMax ?? producto.markupRealMin)}`}
+                        </td>
+                      </>
+                    );
+                  })()}
+                </tr>
+              ))}
           </tbody>
         </table>
+        <Paginador total={lista.length} pagina={pagina} onCambiar={setPagina} />
         {lista.length === 0 && (
           <EstadoVacio texto="No hay productos para mostrar." />
         )}
@@ -1800,6 +1868,7 @@ function HistorialCompras({
   const [proveedor, setProveedor] = useState("");
   const [orden, setOrden] = useState<"recientes" | "antiguas">("recientes");
   const [seleccionadaId, setSeleccionadaId] = useState<string | null>(null);
+  const [pagina, setPagina] = useState(1);
   const proveedores = Array.from(
     new Set(compras.map((compra) => compra.proveedor)),
   ).sort();
@@ -1896,33 +1965,43 @@ function HistorialCompras({
             </tr>
           </thead>
           <tbody>
-            {filtradas.map((compra) => {
-              const lote =
-                lotes.find((item) => item.facturaCompraId === compra.id)
-                  ?.codigoLote ?? compra.nroFactura;
-              return (
-                <tr key={compra.id}>
-                  <td>
-                    <strong>{compra.nroFactura}</strong>
-                  </td>
-                  <td>{fechaVisible(compra.fechaCompra)}</td>
-                  <td>{lote}</td>
-                  <td>{compra.proveedor}</td>
-                  <td>{dinero(compra.montoTotal)}</td>
-                  <td>
-                    <button
-                      className="enlace"
-                      aria-label={`Ver detalle de ${compra.nroFactura}`}
-                      onClick={() => setSeleccionadaId(compra.id)}
-                    >
-                      Ver detalle
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
+            {filtradas
+              .slice(
+                (pagina - 1) * REGISTROS_POR_PAGINA,
+                pagina * REGISTROS_POR_PAGINA,
+              )
+              .map((compra) => {
+                const lote =
+                  lotes.find((item) => item.facturaCompraId === compra.id)
+                    ?.codigoLote ?? compra.nroFactura;
+                return (
+                  <tr key={compra.id}>
+                    <td>
+                      <strong>{compra.nroFactura}</strong>
+                    </td>
+                    <td>{fechaVisible(compra.fechaCompra)}</td>
+                    <td>{lote}</td>
+                    <td>{compra.proveedor}</td>
+                    <td>{dinero(compra.montoTotal)}</td>
+                    <td>
+                      <button
+                        className="enlace"
+                        aria-label={`Ver detalle de ${compra.nroFactura}`}
+                        onClick={() => setSeleccionadaId(compra.id)}
+                      >
+                        Ver detalle
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
           </tbody>
         </table>
+        <Paginador
+          total={filtradas.length}
+          pagina={pagina}
+          onCambiar={setPagina}
+        />
         {filtradas.length === 0 && (
           <EstadoVacio texto="No hay compras que coincidan con los filtros." />
         )}
