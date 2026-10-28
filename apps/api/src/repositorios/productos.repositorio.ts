@@ -1,6 +1,7 @@
 import { supabase } from "../lib/supabase";
 import type {
   CrearProductoEntrada,
+  ActualizarProductoPreciosEntrada,
   ProductoInventario,
   StockLoteResumen,
 } from "@distribuidora/tipos-compartidos";
@@ -70,9 +71,25 @@ export async function obtenerProductos(params?: {
     categoria: producto.categorias?.nombre ?? "Sin categoría",
     precioVenta: Number(producto.precio_venta),
     markupPct: Number(producto.markup_pct),
+    markupRealMin: null,
+    markupRealMax: null,
     stockTotal: producto.stock_total,
     estaActivo: producto.esta_activo ?? true,
   }));
+}
+
+export async function actualizarProductoPrecios(
+  entrada: ActualizarProductoPreciosEntrada,
+): Promise<void> {
+  const { error } = await supabase
+    .from("productos")
+    .update({
+      precio_venta: entrada.precioVenta,
+      markup_pct: entrada.markupPct,
+      actualizado_en: new Date().toISOString(),
+    })
+    .eq("id", entrada.id);
+  if (error) throw new Error(error.message);
 }
 
 export async function obtenerStockDesdeLotes(): Promise<StockLoteResumen[]> {
@@ -105,4 +122,24 @@ export async function obtenerStockDesdeLotes(): Promise<StockLoteResumen[]> {
     if (lotes.length < tamañoPagina) return resumen;
     desde += tamañoPagina;
   }
+}
+
+export async function obtenerCostosLotesActivos(): Promise<
+  Array<{ productoId: string; costoUnitario: number }>
+> {
+  const { data, error } = await supabase
+    .from("lotes")
+    .select("producto_id, costo_unitario")
+    .gt("cantidad_restante", 0);
+  if (error) throw new Error(error.message);
+  return (data ?? []).flatMap((lote) =>
+    lote.producto_id
+      ? [
+          {
+            productoId: lote.producto_id,
+            costoUnitario: Number(lote.costo_unitario),
+          },
+        ]
+      : [],
+  );
 }

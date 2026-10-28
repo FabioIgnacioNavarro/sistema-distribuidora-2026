@@ -76,6 +76,20 @@ export type CrearProductoEntrada = z.infer<typeof crearProductoSchema>;
 
 export const crearProductoRespuestaSchema = z.object({ id: z.string().uuid() });
 
+export const actualizarProductoPreciosSchema = z.object({
+  id: z.string().uuid(),
+  precioVenta: z.number().nonnegative(),
+  markupPct: z.number().min(0).max(100),
+});
+
+export const actualizarProductoPreciosRespuestaSchema = z.object({
+  actualizado: z.literal(true),
+});
+
+export type ActualizarProductoPreciosEntrada = z.infer<
+  typeof actualizarProductoPreciosSchema
+>;
+
 export interface CompraRegistrada {
   id: string;
 }

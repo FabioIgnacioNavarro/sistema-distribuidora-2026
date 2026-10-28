@@ -10,6 +10,7 @@ import type {
 import {
   crearCompra,
   crearProducto,
+  actualizarProductoPrecios,
   obtenerCompras,
   obtenerLotes,
   obtenerProductos,
@@ -161,6 +162,24 @@ export default function App(): JSX.Element {
     }
   };
 
+  const guardarPrecios = async (
+    id: string,
+    precioVenta: number,
+    markupPct: number,
+  ): Promise<void> => {
+    setError(null);
+    try {
+      await actualizarProductoPrecios({ id, precioVenta, markupPct });
+      await cargarDatos();
+    } catch (errorPrecios) {
+      setError(
+        errorPrecios instanceof Error
+          ? errorPrecios.message
+          : "No se pudieron actualizar los precios.",
+      );
+    }
+  };
+
   const navegar = (nuevaVista: Vista): void => {
     setVista(nuevaVista);
     setError(null);
@@ -299,6 +318,7 @@ export default function App(): JSX.Element {
                 productos={productos}
                 categorias={categorias}
                 onNuevoProducto={() => setModalProducto(true)}
+                onActualizarPrecios={guardarPrecios}
               />
             )}
             {vista === "productos" && (
@@ -1082,15 +1102,24 @@ function ListaPrecios({
   productos,
   categorias,
   onNuevoProducto,
+  onActualizarPrecios,
 }: {
   productos: ProductoInventario[];
   categorias: string[];
   onNuevoProducto: () => void;
+  onActualizarPrecios: (
+    id: string,
+    precioVenta: number,
+    markupPct: number,
+  ) => Promise<void>;
 }): JSX.Element {
   const [busqueda, setBusqueda] = useState("");
   const [categoria, setCategoria] = useState("");
   const [ordenMarkup, setOrdenMarkup] = useState("ninguno");
   const [ordenStock, setOrdenStock] = useState("ninguno");
+  const [ediciones, setEdiciones] = useState<
+    Record<string, { precioVenta: number; markupPct: number }>
+  >({});
   const lista = productos
     .filter(
       (producto) =>
@@ -1163,22 +1192,82 @@ function ListaPrecios({
               <th>Categoría</th>
               <th>Stock</th>
               <th>Precio público</th>
-              <th>Markup</th>
+              <th>Markup deseado</th>
+              <th>Markup real por lotes</th>
             </tr>
           </thead>
           <tbody>
             {lista.map((producto) => (
               <tr key={producto.id}>
-                <td>{producto.sku}</td>
-                <td>
-                  <strong>{producto.nombre}</strong>
-                </td>
-                <td>{producto.categoria}</td>
-                <td>{producto.stockTotal}</td>
-                <td>
-                  <strong>{dinero(producto.precioVenta)}</strong>
-                </td>
-                <td>{porcentaje(producto.markupPct)}</td>
+                {(() => {
+                  const edicion = ediciones[producto.id] ?? {
+                    precioVenta: producto.precioVenta,
+                    markupPct: producto.markupPct,
+                  };
+                  const cambiar = (cambio: Partial<typeof edicion>): void =>
+                    setEdiciones((actuales) => ({
+                      ...actuales,
+                      [producto.id]: { ...edicion, ...cambio },
+                    }));
+                  return (
+                    <>
+                      <td>{producto.sku}</td>
+                      <td>
+                        <strong>{producto.nombre}</strong>
+                      </td>
+                      <td>{producto.categoria}</td>
+                      <td>{producto.stockTotal}</td>
+                      <td>
+                        <input
+                          className="campo-tabla"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={edicion.precioVenta}
+                          onChange={(evento) =>
+                            cambiar({
+                              precioVenta: Number(evento.target.value),
+                            })
+                          }
+                          onBlur={() =>
+                            void onActualizarPrecios(
+                              producto.id,
+                              edicion.precioVenta,
+                              edicion.markupPct,
+                            )
+                          }
+                          aria-label={`Precio público de ${producto.nombre}`}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          className="campo-tabla"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          value={edicion.markupPct}
+                          onChange={(evento) =>
+                            cambiar({ markupPct: Number(evento.target.value) })
+                          }
+                          onBlur={() =>
+                            void onActualizarPrecios(
+                              producto.id,
+                              edicion.precioVenta,
+                              edicion.markupPct,
+                            )
+                          }
+                          aria-label={`Markup deseado de ${producto.nombre}`}
+                        />
+                      </td>
+                      <td>
+                        {producto.markupRealMin === null
+                          ? "—"
+                          : `${porcentaje(producto.markupRealMin)} — ${porcentaje(producto.markupRealMax ?? producto.markupRealMin)}`}
+                      </td>
+                    </>
+                  );
+                })()}
               </tr>
             ))}
           </tbody>
