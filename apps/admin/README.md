@@ -23,6 +23,8 @@ En desarrollo Vite reenvía `/api` a `http://localhost:3000`. Para otro entorno,
 
 El registro de compras guarda la factura, sus renglones, los lotes y el incremento de stock mediante una única función transaccional de base de datos. La migración correspondiente está en [`20261028000300_registro-atomico-compras.sql`](../../supabase/migrations/20261028000300_registro-atomico-compras.sql). Luego de revisar y fusionar el PR, se aplica junto con las demás migraciones usando `pnpm exec supabase db push --linked`.
 
+La migración [`20261028000400_ajustar-subtotal-compra-generado.sql`](../../supabase/migrations/20261028000400_ajustar-subtotal-compra-generado.sql) adapta el registro al esquema donde `subtotal` se calcula automáticamente en la base.
+
 La API actual es para desarrollo local. Antes de publicarla hay que añadir autenticación y autorización por rol; hoy usa la clave de servicio para acceder a Supabase.
 
 La maqueta visual de referencia está en [`prototipo-web`](../../prototipo-web/README.md).
