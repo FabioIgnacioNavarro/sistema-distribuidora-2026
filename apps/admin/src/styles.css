@@ -492,6 +492,17 @@ button {
   border-color: var(--borde);
   background: var(--superficie);
 }
+.app--oscura .barra-filtros input[type="search"],
+.app--oscura .barra-filtros input::placeholder,
+.app--oscura .buscador-lista > input::placeholder {
+  color: #9caf9f;
+}
+.app--oscura select,
+.app--oscura .barra-filtros input[type="date"],
+.app--oscura .buscador-lista > input,
+.app--oscura .buscador-lista__resultados {
+  color-scheme: dark;
+}
 .boton-filtro {
   min-width: auto;
   font-size: 13px;
@@ -1247,4 +1258,7 @@ tbody tr:last-child td {
 }
 .app--oscura .buscador-lista__resultados button {
   color: inherit;
+}
+.app--oscura .buscador-lista__resultados button:hover {
+  background: var(--superficie-2);
 }
