@@ -9,9 +9,9 @@ interface RespuestaRpcProducto {
   rpc: (
     nombre: "crear_producto",
     argumentos: {
-      p_sku: string;
       p_nombre: string;
-      p_categoria: string;
+      p_categoria_codigo: string;
+      p_subcategoria_codigo: string | null;
       p_precio_venta: number;
       p_markup_pct: number;
     },
@@ -23,9 +23,9 @@ export async function crearProducto(
 ): Promise<string> {
   const clienteRpc = supabase as unknown as RespuestaRpcProducto;
   const { data, error } = await clienteRpc.rpc("crear_producto", {
-    p_sku: entrada.sku,
     p_nombre: entrada.nombre,
-    p_categoria: entrada.categoria,
+    p_categoria_codigo: entrada.categoriaCodigo,
+    p_subcategoria_codigo: entrada.subcategoriaCodigo,
     p_precio_venta: entrada.precioVenta,
     p_markup_pct: entrada.markupPct,
   });

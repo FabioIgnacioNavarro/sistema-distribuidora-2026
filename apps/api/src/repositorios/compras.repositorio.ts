@@ -16,9 +16,9 @@ interface RespuestaRpcCompra {
       p_lineas: Array<{
         productoId: string | null;
         nuevoProducto: {
-          sku: string;
           nombre: string;
-          categoria: string;
+          categoriaCodigo: string;
+          subcategoriaCodigo: string | null;
         } | null;
         cantidad: number;
         costoUnitario: number;

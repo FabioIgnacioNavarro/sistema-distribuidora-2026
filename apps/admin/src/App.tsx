@@ -27,7 +27,11 @@ type Vista =
   | "clientes";
 interface LineaCompraFormulario {
   productoId: string | null;
-  nuevoProducto: { sku: string; nombre: string; categoria: string } | null;
+  nuevoProducto: {
+    nombre: string;
+    categoriaCodigo: "ALI" | "SNK" | "BEB";
+    subcategoriaCodigo: "V" | "C" | "G" | null;
+  } | null;
   cantidad: number;
   costoUnitario: number;
   fechaVencimiento: string;
@@ -1225,14 +1229,24 @@ function ModalNuevoProducto({
   onCerrar: () => void;
   onGuardar: (entrada: CrearProductoEntrada) => Promise<void>;
 }): JSX.Element {
-  const [sku, setSku] = useState("");
   const [nombre, setNombre] = useState("");
-  const [categoria, setCategoria] = useState("");
+  const [categoriaCodigo, setCategoriaCodigo] = useState<"ALI" | "SNK" | "BEB">(
+    "ALI",
+  );
+  const [subcategoriaCodigo, setSubcategoriaCodigo] = useState<"V" | "C" | "G">(
+    "V",
+  );
   const [precioVenta, setPrecioVenta] = useState(0);
   const [markupPct, setMarkupPct] = useState(0);
   const enviar = (evento: FormEvent<HTMLFormElement>): void => {
     evento.preventDefault();
-    void onGuardar({ sku, nombre, categoria, precioVenta, markupPct });
+    void onGuardar({
+      nombre,
+      categoriaCodigo,
+      subcategoriaCodigo: categoriaCodigo === "BEB" ? subcategoriaCodigo : null,
+      precioVenta,
+      markupPct,
+    });
   };
   return (
     <div
@@ -1264,14 +1278,6 @@ function ModalNuevoProducto({
         </p>
         <form className="campos-grid" onSubmit={enviar}>
           <label>
-            SKU
-            <input
-              required
-              value={sku}
-              onChange={(evento) => setSku(evento.target.value)}
-            />
-          </label>
-          <label>
             Nombre
             <input
               required
@@ -1281,12 +1287,32 @@ function ModalNuevoProducto({
           </label>
           <label>
             Categoría
-            <input
-              required
-              value={categoria}
-              onChange={(evento) => setCategoria(evento.target.value)}
-            />
+            <select
+              value={categoriaCodigo}
+              onChange={(evento) =>
+                setCategoriaCodigo(evento.target.value as "ALI" | "SNK" | "BEB")
+              }
+            >
+              <option value="ALI">Almacén (ALI)</option>
+              <option value="SNK">Snack (SNK)</option>
+              <option value="BEB">Bebida (BEB)</option>
+            </select>
           </label>
+          {categoriaCodigo === "BEB" && (
+            <label>
+              Subcategoría
+              <select
+                value={subcategoriaCodigo}
+                onChange={(evento) =>
+                  setSubcategoriaCodigo(evento.target.value as "V" | "C" | "G")
+                }
+              >
+                <option value="V">Vino</option>
+                <option value="C">Cerveza</option>
+                <option value="G">Gaseosa / agua saborizada</option>
+              </select>
+            </label>
+          )}
           <label>
             Precio de venta ($)
             <input
@@ -1350,7 +1376,9 @@ function FacturaFormulario({
     {
       productoId: productos[0]?.id ?? "",
       nuevoProducto:
-        productos.length === 0 ? { sku: "", nombre: "", categoria: "" } : null,
+        productos.length === 0
+          ? { nombre: "", categoriaCodigo: "ALI", subcategoriaCodigo: null }
+          : null,
       cantidad: 1,
       costoUnitario: 0,
       fechaVencimiento: "",
@@ -1403,10 +1431,7 @@ function FacturaFormulario({
     lineas.length > 0 &&
     lineas.every(
       (linea) =>
-        (linea.productoId ||
-          (linea.nuevoProducto?.sku.trim() &&
-            linea.nuevoProducto.nombre.trim() &&
-            linea.nuevoProducto.categoria.trim())) &&
+        (linea.productoId || linea.nuevoProducto?.nombre.trim()) &&
         linea.cantidad > 0 &&
         linea.costoUnitario >= 0,
     ),
@@ -1499,9 +1524,9 @@ function FacturaFormulario({
                           ? {
                               productoId: null,
                               nuevoProducto: {
-                                sku: "",
                                 nombre: "",
-                                categoria: "",
+                                categoriaCodigo: "ALI",
+                                subcategoriaCodigo: null,
                               },
                             }
                           : {
@@ -1525,20 +1550,6 @@ function FacturaFormulario({
                     <div className="producto-nuevo-campos">
                       <input
                         required
-                        aria-label="SKU del nuevo producto"
-                        placeholder="SKU"
-                        value={linea.nuevoProducto.sku}
-                        onChange={(evento) =>
-                          actualizarLinea(indice, {
-                            nuevoProducto: {
-                              ...linea.nuevoProducto!,
-                              sku: evento.target.value,
-                            },
-                          })
-                        }
-                      />
-                      <input
-                        required
                         aria-label="Nombre del nuevo producto"
                         placeholder="Nombre"
                         value={linea.nuevoProducto.nombre}
@@ -1551,25 +1562,57 @@ function FacturaFormulario({
                           })
                         }
                       />
-                      <input
-                        required
-                        aria-label="Categoría del nuevo producto"
-                        placeholder="Categoría"
-                        value={linea.nuevoProducto.categoria}
+                      <select
+                        aria-label="Categoría"
+                        value={linea.nuevoProducto.categoriaCodigo}
                         onChange={(evento) =>
                           actualizarLinea(indice, {
                             nuevoProducto: {
                               ...linea.nuevoProducto!,
-                              categoria: evento.target.value,
+                              categoriaCodigo: evento.target.value as
+                                | "ALI"
+                                | "SNK"
+                                | "BEB",
+                              subcategoriaCodigo:
+                                evento.target.value === "BEB" ? "V" : null,
                             },
                           })
                         }
-                      />
+                      >
+                        <option value="ALI">Almacén</option>
+                        <option value="SNK">Snack</option>
+                        <option value="BEB">Bebida</option>
+                      </select>
+                      {linea.nuevoProducto.categoriaCodigo === "BEB" && (
+                        <select
+                          aria-label="Subcategoría de bebida"
+                          value={linea.nuevoProducto.subcategoriaCodigo ?? "V"}
+                          onChange={(evento) =>
+                            actualizarLinea(indice, {
+                              nuevoProducto: {
+                                ...linea.nuevoProducto!,
+                                subcategoriaCodigo: evento.target.value as
+                                  | "V"
+                                  | "C"
+                                  | "G",
+                              },
+                            })
+                          }
+                        >
+                          <option value="V">Vino</option>
+                          <option value="C">Cerveza</option>
+                          <option value="G">Gaseosa / agua saborizada</option>
+                        </select>
+                      )}
                     </div>
                   )}
                 </div>
                 <span className="categoria-linea-compra">
-                  {linea.nuevoProducto?.categoria ||
+                  {(linea.nuevoProducto
+                    ? (
+                        { ALI: "Almacén", SNK: "Snack", BEB: "Bebida" } as const
+                      )[linea.nuevoProducto.categoriaCodigo]
+                    : null) ||
                     productoSeleccionado?.categoria ||
                     "—"}
                 </span>

@@ -4,11 +4,33 @@ const fechaSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "La fecha debe tener formato AAAA-MM-DD");
 
-export const nuevoProductoCompraSchema = z.object({
-  sku: z.string().trim().min(1).max(50),
+const datosProductoSchema = z.object({
   nombre: z.string().trim().min(1).max(200),
-  categoria: z.string().trim().min(1).max(100),
+  categoriaCodigo: z.enum(["ALI", "SNK", "BEB"]),
+  subcategoriaCodigo: z.enum(["V", "C", "G"]).nullable(),
 });
+
+const validarCategoriaProducto = (
+  producto: z.infer<typeof datosProductoSchema>,
+  contexto: z.RefinementCtx,
+): void => {
+  if (producto.categoriaCodigo === "BEB" && !producto.subcategoriaCodigo) {
+    contexto.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Las bebidas requieren subcategoría.",
+    });
+  }
+  if (producto.categoriaCodigo !== "BEB" && producto.subcategoriaCodigo) {
+    contexto.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Solo las bebidas admiten subcategoría.",
+    });
+  }
+};
+
+export const nuevoProductoCompraSchema = datosProductoSchema.superRefine(
+  validarCategoriaProducto,
+);
 
 export const lineaCompraSchema = z
   .object({
@@ -44,13 +66,12 @@ export const registrarCompraSchema = z.object({
 
 export type RegistrarCompraEntrada = z.infer<typeof registrarCompraSchema>;
 
-export const crearProductoSchema = z.object({
-  sku: z.string().trim().min(1).max(50),
-  nombre: z.string().trim().min(1).max(200),
-  categoria: z.string().trim().min(1).max(100),
-  precioVenta: z.number().nonnegative(),
-  markupPct: z.number().min(0).max(100),
-});
+export const crearProductoSchema = datosProductoSchema
+  .extend({
+    precioVenta: z.number().nonnegative(),
+    markupPct: z.number().min(0).max(100),
+  })
+  .superRefine(validarCategoriaProducto);
 export type CrearProductoEntrada = z.infer<typeof crearProductoSchema>;
 
 export const crearProductoRespuestaSchema = z.object({ id: z.string().uuid() });
