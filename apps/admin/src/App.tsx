@@ -1,42 +1,1131 @@
-import { Fragment, useState } from 'react';
-import type { LoteInventario, ProductoInventario } from '@distribuidora/tipos-compartidos';
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
+import type {
+  CompraHistorial,
+  LoteDetalle,
+  ProductoInventario,
+  RegistrarCompraEntrada,
+} from "@distribuidora/tipos-compartidos";
+import {
+  crearCompra,
+  obtenerCompras,
+  obtenerLotes,
+  obtenerProductos,
+} from "./repositorios/api.repositorio";
 
-type Vista = 'inicio' | 'precios' | 'productos' | 'lotes' | 'compras' | 'historialCompras' | 'clientes';
-interface LineaCompra { productoId: string; cantidad: number; costoUnitario: number; vencimiento: string; }
-
-const productosBase: ProductoInventario[] = [
-  { id: 'p-1', sku: 'ALI-059', nombre: 'Aceite Cocinero 900cc Girasol', categoria: 'Almacén', precioVenta: 3190, markupPct: 24.41, stockTotal: 168, estaActivo: true },
-  { id: 'p-2', sku: 'ALI-036.0', nombre: 'Aceite Legítimo 1500cc Girasol', categoria: 'Almacén', precioVenta: 4750, markupPct: 30, stockTotal: 60, estaActivo: true },
-  { id: 'p-3', sku: 'ALI-037.OF', nombre: 'Aceite Legítimo 900cc Girasol', categoria: 'Almacén', precioVenta: 3190, markupPct: 26, stockTotal: 228, estaActivo: true },
-  { id: 'p-4', sku: 'BEB-V013', nombre: 'Alaris Cabernet Sauvignon', categoria: 'Bebidas', precioVenta: 4100, markupPct: 17.1, stockTotal: 24, estaActivo: true },
-  { id: 'p-5', sku: 'SNK-003', nombre: 'Crutons Minitostaditas 100 gr · Queso', categoria: 'Snacks', precioVenta: 1800, markupPct: 30, stockTotal: 42, estaActivo: true },
-];
-const lotesBase: LoteInventario[] = [
-  { id: 'l-1', productoId: 'p-1', codigoLote: '1503-Carrefour-15-08-2026', cantidadOriginal: 100, cantidadRestante: 72, costoUnitario: 2564.1, fechaVencimiento: '2027-08-15', recibidoEn: '2026-08-15' },
-  { id: 'l-2', productoId: 'p-1', codigoLote: '1810-Mayorista-02-10-2026', cantidadOriginal: 68, cantidadRestante: 68, costoUnitario: 2630, fechaVencimiento: '2027-10-02', recibidoEn: '2026-10-02' },
-  { id: 'l-3', productoId: 'p-2', codigoLote: '1601-Distribuidor-20-08-2026', cantidadOriginal: 60, cantidadRestante: 60, costoUnitario: 3800, fechaVencimiento: null, recibidoEn: '2026-08-20' },
-  { id: 'l-4', productoId: 'p-3', codigoLote: '1708-Carrefour-25-09-2026', cantidadOriginal: 228, cantidadRestante: 228, costoUnitario: 2532, fechaVencimiento: '2027-09-25', recibidoEn: '2026-09-25' },
-];
-const dinero = (valor: number): string => valor.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
-const porcentaje = (valor: number): string => `${valor.toLocaleString('es-AR', { maximumFractionDigits: 2 })}%`;
-
-export default function App(): JSX.Element {
-  const [vista, setVista] = useState<Vista>('inicio'); const [oscuro, setOscuro] = useState(false); const [productos, setProductos] = useState(productosBase); const [lotes, setLotes] = useState(lotesBase); const [facturaAbierta, setFacturaAbierta] = useState(false); const [lotesAbiertos, setLotesAbiertos] = useState<Set<string>>(new Set());
-  const navegar = (nuevaVista: Vista): void => setVista(nuevaVista);
-  const guardarFactura = (proveedor: string, numero: string, fecha: string, lineas: LineaCompra[]): void => { const sufijo = `${numero}-${proveedor.replaceAll(' ', '')}-${fecha}`; const nuevosLotes = lineas.map((linea, indice): LoteInventario => ({ id: `lote-${Date.now()}-${indice}`, productoId: linea.productoId, codigoLote: sufijo, cantidadOriginal: linea.cantidad, cantidadRestante: linea.cantidad, costoUnitario: linea.costoUnitario, fechaVencimiento: linea.vencimiento || null, recibidoEn: fecha })); setLotes((actuales) => [...actuales, ...nuevosLotes]); setProductos((actuales) => actuales.map((producto) => { const sumado = lineas.filter((linea) => linea.productoId === producto.id).reduce((total, linea) => total + linea.cantidad, 0); return sumado ? { ...producto, stockTotal: producto.stockTotal + sumado } : producto; })); setFacturaAbierta(false); setVista('historialCompras'); };
-  return <div className={oscuro ? 'app app--oscura' : 'app'}><aside className="barra-lateral"><div className="marca"><span className="marca__simbolo">F</span><span>FONTANA<br /><small>DISTRIBUCIONES</small></span></div><div className="perfil"><span className="avatar">M</span><span><strong>Martín</strong><small>Administrador</small></span></div><nav className="menu"><button className={vista === 'inicio' ? 'menu__item menu__item--activo' : 'menu__item'} onClick={() => navegar('inicio')}><span>⌂</span>Panel de inicio</button><p className="menu__grupo">Operaciones</p><button className={vista === 'precios' ? 'menu__item menu__item--activo' : 'menu__item'} onClick={() => navegar('precios')}><span>$</span>Lista de precios</button><button className={vista === 'productos' ? 'menu__item menu__item--activo' : 'menu__item'} onClick={() => navegar('productos')}><span>▥</span>Stock de productos</button><button className={vista === 'lotes' ? 'menu__item menu__item--activo' : 'menu__item'} onClick={() => navegar('lotes')}><span>◫</span>Lotes</button><button className={vista === 'compras' ? 'menu__item menu__item--activo' : 'menu__item'} onClick={() => navegar('compras')}><span>＋</span>Registrar compra</button><button className={vista === 'historialCompras' ? 'menu__item menu__item--activo' : 'menu__item'} onClick={() => navegar('historialCompras')}><span>▤</span>Historial de compras</button><p className="menu__grupo">Personas</p><button className={vista === 'clientes' ? 'menu__item menu__item--activo' : 'menu__item'} onClick={() => navegar('clientes')}><span>♧</span>Clientes</button><p className="menu__grupo">Ventas y logística</p><button className="menu__item menu__item--proximamente"><span>↗</span>Ventas y rentabilidad<em>Próximo</em></button><button className="menu__item menu__item--proximamente"><span>⇢</span>Logística<em>Próximo</em></button></nav><div className="barra-lateral__pie"><small>V1 · Gestión Fontana</small></div></aside><main className="contenido-principal"><header className="cabecera"><div><span className="miga">Admin / </span><strong>{nombreVista(vista)}</strong></div><div className="cabecera__acciones"><button className="boton-icono" onClick={() => setOscuro(!oscuro)}>{oscuro ? '☼' : '◐'}</button><span className="avatar avatar--pequeno">M</span></div></header>{vista === 'inicio' && <Inicio navegar={navegar} productos={productos} lotes={lotes} />}{vista === 'precios' && <ListaPrecios productos={productos} />}{vista === 'productos' && <TablaProductos productos={productos} />}{vista === 'lotes' && <TablaLotes productos={productos} lotes={lotes} lotesAbiertos={lotesAbiertos} setLotesAbiertos={setLotesAbiertos} navegar={navegar} />}{vista === 'compras' && <RegistrarCompra productos={productos} onGuardar={guardarFactura} />}{vista === 'historialCompras' && <HistorialCompras navegar={navegar} />}{vista === 'clientes' && <ClientesPlaceholder navegar={navegar} />}{facturaAbierta && <FacturaModal productos={productos} onCerrar={() => setFacturaAbierta(false)} onGuardar={guardarFactura} />}</main>{vista === 'inicio' && <button className="boton-flotante" onClick={() => setFacturaAbierta(true)}>＋ Cargar factura</button>}</div>;
+type Vista =
+  | "inicio"
+  | "precios"
+  | "productos"
+  | "lotes"
+  | "compras"
+  | "historialCompras"
+  | "clientes";
+interface LineaCompraFormulario {
+  productoId: string;
+  cantidad: number;
+  costoUnitario: number;
+  fechaVencimiento: string;
 }
 
-function nombreVista(vista: Vista): string { return ({ inicio: 'Panel de inicio', precios: 'Lista de precios', productos: 'Stock de productos', lotes: 'Lotes', compras: 'Registrar compra', historialCompras: 'Historial de compras', clientes: 'Clientes' })[vista]; }
-function Inicio({ navegar, productos, lotes }: { navegar: (vista: Vista) => void; productos: ProductoInventario[]; lotes: LoteInventario[] }): JSX.Element { const unidades = productos.reduce((total, producto) => total + producto.stockTotal, 0); return <section className="pagina"><div className="pagina__encabezado"><div><p className="eyebrow">Lunes, 26 de octubre de 2026</p><h1>Panel de inicio</h1><p className="subtitulo">Resumen de la operación de Fontana Distribuciones.</p></div><button className="boton boton--primario" onClick={() => navegar('compras')}>＋ Registrar compra</button></div><div className="tarjetas"><article className="tarjeta tarjeta--verde"><strong>{productos.length}</strong><span>Productos activos</span><small>Catálogo vigente</small></article><article className="tarjeta"><strong>{unidades}</strong><span>Unidades en stock</span><small>Distribuidas en {lotes.length} lotes</small></article><article className="tarjeta tarjeta--alerta"><strong>{lotes.filter((lote) => lote.cantidadRestante < lote.cantidadOriginal * .25).length}</strong><span>Alertas de inventario</span><small>Requieren revisión</small></article><article className="tarjeta"><strong>$0</strong><span>Ventas del día</span><small>Se conectará con pedidos</small></article></div><div className="seccion-doble"><article className="panel"><h2>Operación rápida</h2><p>Las compras crean lotes y actualizan el stock automáticamente.</p><div className="acciones-rapidas"><button className="boton boton--primario" onClick={() => navegar('productos')}>Ver stock</button><button className="boton boton--secundario" onClick={() => navegar('lotes')}>Ver lotes</button><button className="boton boton--secundario" onClick={() => navegar('precios')}>Lista de precios</button></div></article><article className="panel panel--verde"><p className="eyebrow">Siguiente módulo</p><h2>Pedidos y rentabilidad</h2><p>La próxima etapa conectará ventas, remitos y comisiones.</p></article></div></section>; }
+const dinero = (valor: number): string =>
+  valor.toLocaleString("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 2,
+  });
+const porcentaje = (valor: number): string =>
+  `${valor.toLocaleString("es-AR", { maximumFractionDigits: 2 })}%`;
+const fechaVisible = (valor: string): string =>
+  new Date(`${valor.slice(0, 10)}T12:00:00`).toLocaleDateString("es-AR");
+const fechaHoy = (): string => {
+  const hoy = new Date();
+  return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`;
+};
 
-function Filtros({ categorias, onBuscar }: { categorias: string[]; onBuscar?: (texto: string) => void }): JSX.Element { return <div className="barra-filtros"><label className="buscador"><span>⌕</span><input onChange={(evento) => onBuscar?.(evento.target.value)} placeholder="Buscar por SKU o nombre..." /></label><select><option>Todas las categorías</option>{categorias.map((categoria) => <option key={categoria}>{categoria}</option>)}</select><button className="boton-filtro">☷ Filtros</button></div>; }
-function TablaProductos({ productos }: { productos: ProductoInventario[] }): JSX.Element { const [busqueda, setBusqueda] = useState(''); const lista = productos.filter((producto) => `${producto.sku} ${producto.nombre}`.toLowerCase().includes(busqueda.toLowerCase())); return <section className="pagina"><div className="pagina__encabezado"><div><p className="eyebrow">Operaciones / Stock</p><h1>Stock de productos</h1><p className="subtitulo">Un resumen de stock por producto. El detalle de compras se consulta en Lotes.</p></div><button className="boton boton--primario">＋ Nuevo producto</button></div><Filtros categorias={[...new Set(productos.map((producto) => producto.categoria))]} onBuscar={setBusqueda} /><div className="tabla-contenedor"><table><thead><tr><th>SKU</th><th>Descripción del artículo</th><th>Categoría</th><th>Precio público</th><th>Stock inicial</th><th>Stock actual</th><th /></tr></thead><tbody>{lista.map((producto) => <tr key={producto.id}><td><strong>{producto.sku}</strong></td><td>{producto.nombre}</td><td><span className="etiqueta-categoria">{producto.categoria}</span></td><td>{dinero(producto.precioVenta)}</td><td>{producto.stockTotal}</td><td><strong>{producto.stockTotal}</strong><div className="barra-stock"><i style={{ width: '78%' }} /></div></td><td><button className="accion-tabla">•••</button></td></tr>)}</tbody></table></div></section>; }
-function TablaLotes({ productos, lotes, lotesAbiertos, setLotesAbiertos, navegar }: { productos: ProductoInventario[]; lotes: LoteInventario[]; lotesAbiertos: Set<string>; setLotesAbiertos: (valor: Set<string>) => void; navegar: (vista: Vista) => void }): JSX.Element { const alternar = (id: string): void => { const siguiente = new Set(lotesAbiertos); siguiente.has(id) ? siguiente.delete(id) : siguiente.add(id); setLotesAbiertos(siguiente); }; return <section className="pagina"><div className="pagina__encabezado"><div><p className="eyebrow">Operaciones / Stock / Lotes</p><h1>Lotes</h1><p className="subtitulo">Compras recibidas, remanente disponible y costo por lote.</p></div><button className="boton boton--primario" onClick={() => navegar('compras')}>＋ Registrar compra</button></div><Filtros categorias={[...new Set(productos.map((producto) => producto.categoria))]} /><div className="tabla-contenedor"><table><thead><tr><th>Producto</th><th>Categoría</th><th>Stock actual</th><th>Lotes registrados</th><th>Estado</th><th /></tr></thead><tbody>{productos.map((producto) => { const propios = lotes.filter((lote) => lote.productoId === producto.id); const abierto = lotesAbiertos.has(producto.id); return <Fragment key={producto.id}><tr className={abierto ? 'fila-producto fila-producto--abierta' : 'fila-producto'}><td><div className="producto-celda"><button className="expansor" onClick={() => alternar(producto.id)}>{abierto ? '⌄' : '›'}</button><span><strong>{producto.nombre}</strong><small>{producto.sku}</small></span></div></td><td><span className="etiqueta-categoria">{producto.categoria}</span></td><td><strong>{producto.stockTotal} u.</strong></td><td>{propios.length}</td><td><span className="estado estado--activo">Disponible</span></td><td /></tr>{abierto && propios.map((lote) => <tr className="fila-lote" key={lote.id}><td><span className="lote-nombre">↳ <strong>{lote.codigoLote}</strong><small>Recibido: {lote.recibidoEn}</small></span></td><td>Costo: {dinero(lote.costoUnitario)}</td><td><strong>{lote.cantidadRestante} / {lote.cantidadOriginal} u.</strong><div className="barra-stock barra-stock--lote"><i style={{ width: `${lote.cantidadRestante / lote.cantidadOriginal * 100}%` }} /></div></td><td>{lote.fechaVencimiento ?? 'Sin vencimiento'}</td><td><span className="estado estado--lote">Disponible</span></td><td /></tr>)}</Fragment>; })}</tbody></table></div></section>; }
-function ListaPrecios({ productos }: { productos: ProductoInventario[] }): JSX.Element { return <section className="pagina"><div className="pagina__encabezado"><div><p className="eyebrow">Operaciones / Precios</p><h1>Lista de precios</h1><p className="subtitulo">Precio público, markup, comisión y ganancia neta por unidad.</p></div><button className="boton boton--primario">＋ Editar precios</button></div><Filtros categorias={[...new Set(productos.map((producto) => producto.categoria))]} /><div className="tabla-contenedor"><table><thead><tr><th>SKU</th><th>Producto</th><th>Categoría</th><th>Stock</th><th>Precio público</th><th>Markup</th><th>Comisión (10%)</th><th>Ganancia unitaria</th></tr></thead><tbody>{productos.map((producto) => { const comision = producto.precioVenta * .1; const ganancia = producto.precioVenta - producto.precioVenta / (1 + producto.markupPct / 100) - comision; return <tr key={producto.id}><td>{producto.sku}</td><td><strong>{producto.nombre}</strong></td><td>{producto.categoria}</td><td>{producto.stockTotal}</td><td><strong>{dinero(producto.precioVenta)}</strong></td><td>{porcentaje(producto.markupPct)}</td><td>{dinero(comision)}</td><td className="ganancia">{dinero(ganancia)}</td></tr>; })}</tbody></table></div></section>; }
+export default function App(): JSX.Element {
+  const [vista, setVista] = useState<Vista>("inicio");
+  const [oscuro, setOscuro] = useState(false);
+  const [productos, setProductos] = useState<ProductoInventario[]>([]);
+  const [lotes, setLotes] = useState<LoteDetalle[]>([]);
+  const [compras, setCompras] = useState<CompraHistorial[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lotesAbiertos, setLotesAbiertos] = useState<Set<string>>(new Set());
 
-function RegistrarCompra({ productos, onGuardar }: { productos: ProductoInventario[]; onGuardar: (proveedor: string, numero: string, fecha: string, lineas: LineaCompra[]) => void }): JSX.Element { return <section className="pagina"><div className="pagina__encabezado"><div><p className="eyebrow">Compras / Nueva compra</p><h1>Registrar nueva compra</h1><p className="subtitulo">Cargá la factura: cada detalle generará un lote y sumará stock.</p></div></div><FacturaFormulario productos={productos} onGuardar={onGuardar} /></section>; }
-function FacturaFormulario({ productos, onGuardar }: { productos: ProductoInventario[]; onGuardar: (proveedor: string, numero: string, fecha: string, lineas: LineaCompra[]) => void }): JSX.Element { const [proveedor, setProveedor] = useState(''); const [numero, setNumero] = useState(''); const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10)); const [lineas, setLineas] = useState<LineaCompra[]>([{ productoId: productos[0]?.id ?? '', cantidad: 1, costoUnitario: 0, vencimiento: '' }]); const agregar = (): void => setLineas([...lineas, { productoId: productos[0]?.id ?? '', cantidad: 1, costoUnitario: 0, vencimiento: '' }]); return <div className="formulario-factura"><div className="panel"><h2>Cabecera de factura</h2><div className="campos-grid"><label>Fecha de compra<input type="date" value={fecha} onChange={(evento) => setFecha(evento.target.value)} /></label><label>Número de factura<input value={numero} onChange={(evento) => setNumero(evento.target.value)} placeholder="FAC-0029" /></label><label>Proveedor<input value={proveedor} onChange={(evento) => setProveedor(evento.target.value)} placeholder="Distribuidora Mayorista Sur" /></label></div></div><div className="panel"><div className="panel__encabezado"><div><h2>Detalle de compra</h2><p>Cada renglón crea un lote asociado al producto.</p></div><button className="boton boton--secundario" onClick={agregar}>＋ Añadir producto</button></div><div className="lineas-factura">{lineas.map((linea, indice) => <div className="linea-factura" key={`${indice}-${linea.productoId}`}><select value={linea.productoId} onChange={(evento) => setLineas(lineas.map((actual, i) => i === indice ? { ...actual, productoId: evento.target.value } : actual))}>{productos.map((producto) => <option key={producto.id} value={producto.id}>{producto.sku} · {producto.nombre}</option>)}</select><input type="number" min="1" value={linea.cantidad} onChange={(evento) => setLineas(lineas.map((actual, i) => i === indice ? { ...actual, cantidad: Number(evento.target.value) } : actual))} placeholder="Cantidad" /><input type="number" min="0" value={linea.costoUnitario} onChange={(evento) => setLineas(lineas.map((actual, i) => i === indice ? { ...actual, costoUnitario: Number(evento.target.value) } : actual))} placeholder="Costo unitario" /><input type="date" value={linea.vencimiento} onChange={(evento) => setLineas(lineas.map((actual, i) => i === indice ? { ...actual, vencimiento: evento.target.value } : actual))} /><button className="accion-tabla" onClick={() => setLineas(lineas.filter((_, i) => i !== indice))}>×</button></div>)}</div><div className="formulario-acciones"><button className="boton boton--secundario">Cancelar</button><button className="boton boton--primario" disabled={!proveedor || !numero || lineas.length === 0} onClick={() => onGuardar(proveedor, numero, fecha, lineas)}>Guardar factura y crear lotes</button></div></div></div>; }
-function FacturaModal({ productos, onCerrar, onGuardar }: { productos: ProductoInventario[]; onCerrar: () => void; onGuardar: (proveedor: string, numero: string, fecha: string, lineas: LineaCompra[]) => void }): JSX.Element { return <div className="modal-fondo"><div className="modal-tarjeta"><button className="modal-cerrar" onClick={onCerrar}>×</button><h2>Cargar factura de compra</h2><p>La factura se convertirá en lotes y actualizará el stock.</p><FacturaFormulario productos={productos} onGuardar={onGuardar} /></div></div>; }
-function HistorialCompras({ navegar }: { navegar: (vista: Vista) => void }): JSX.Element { return <section className="pagina"><div className="pagina__encabezado"><div><p className="eyebrow">Compras / Historial</p><h1>Historial de compras</h1><p className="subtitulo">Facturas cargadas y lotes creados.</p></div><button className="boton boton--primario" onClick={() => navegar('compras')}>＋ Nueva compra</button></div><div className="tabla-contenedor"><table><thead><tr><th>Id factura</th><th>Fecha de carga</th><th>Lote creado</th><th>Proveedor</th><th>Costo total</th><th /></tr></thead><tbody><tr><td>FAC-0028</td><td>24/08/2026</td><td>0028-MayoristaSur-24-08-2026</td><td>Distribuidora Mayorista Sur</td><td>{dinero(232000)}</td><td><button className="enlace">Ver detalle</button></td></tr></tbody></table></div></section>; }
-function ClientesPlaceholder({ navegar }: { navegar: (vista: Vista) => void }): JSX.Element { return <section className="pagina"><div className="pagina__encabezado"><div><p className="eyebrow">Personas / Clientes</p><h1>Clientes</h1><p className="subtitulo">El módulo se conectará con los pedidos en la próxima etapa.</p></div><button className="boton boton--primario" onClick={() => navegar('inicio')}>Volver al inicio</button></div><div className="panel panel--vacio"><h2>Clientes</h2><p>La estructura ya contempla código, nombre comercial, dirección y contacto.</p></div></section>; }
+  const cargarDatos = useCallback(async (): Promise<void> => {
+    setError(null);
+    try {
+      const [productosRecibidos, lotesRecibidos, comprasRecibidas] =
+        await Promise.all([
+          obtenerProductos(),
+          obtenerLotes(),
+          obtenerCompras(),
+        ]);
+      setProductos(productosRecibidos);
+      setLotes(lotesRecibidos);
+      setCompras(comprasRecibidas);
+    } catch (errorCarga) {
+      setError(
+        errorCarga instanceof Error
+          ? errorCarga.message
+          : "No se pudieron cargar los datos.",
+      );
+    } finally {
+      setCargando(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void cargarDatos();
+  }, [cargarDatos]);
+
+  const guardarFactura = async (
+    entrada: RegistrarCompraEntrada,
+  ): Promise<void> => {
+    setGuardando(true);
+    setError(null);
+    try {
+      await crearCompra(entrada);
+      await cargarDatos();
+      setVista("historialCompras");
+    } catch (errorGuardado) {
+      setError(
+        errorGuardado instanceof Error
+          ? errorGuardado.message
+          : "No se pudo guardar la compra.",
+      );
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const navegar = (nuevaVista: Vista): void => {
+    setVista(nuevaVista);
+    setError(null);
+  };
+  const categorias = useMemo(
+    () => [...new Set(productos.map((producto) => producto.categoria))].sort(),
+    [productos],
+  );
+
+  return (
+    <div className={oscuro ? "app app--oscura" : "app"}>
+      <aside className="barra-lateral">
+        <div className="marca">
+          <span className="marca__simbolo">F</span>
+          <span>
+            FONTANA
+            <br />
+            <small>DISTRIBUCIONES</small>
+          </span>
+        </div>
+        <div className="perfil">
+          <span>
+            <strong>Modo local</strong>
+            <small>Sin sesión autenticada</small>
+          </span>
+        </div>
+        <nav className="menu">
+          <BotonMenu
+            activo={vista === "inicio"}
+            onClick={() => navegar("inicio")}
+            icono="⌂"
+          >
+            Panel de inicio
+          </BotonMenu>
+          <p className="menu__grupo">Operaciones</p>
+          <BotonMenu
+            activo={vista === "precios"}
+            onClick={() => navegar("precios")}
+            icono="$"
+          >
+            Lista de precios
+          </BotonMenu>
+          <BotonMenu
+            activo={vista === "productos"}
+            onClick={() => navegar("productos")}
+            icono="▥"
+          >
+            Stock de productos
+          </BotonMenu>
+          <BotonMenu
+            activo={vista === "lotes"}
+            onClick={() => navegar("lotes")}
+            icono="◫"
+          >
+            Lotes
+          </BotonMenu>
+          <BotonMenu
+            activo={vista === "compras"}
+            onClick={() => navegar("compras")}
+            icono="＋"
+          >
+            Registrar compra
+          </BotonMenu>
+          <BotonMenu
+            activo={vista === "historialCompras"}
+            onClick={() => navegar("historialCompras")}
+            icono="▤"
+          >
+            Historial de compras
+          </BotonMenu>
+          <p className="menu__grupo">Personas</p>
+          <BotonMenu
+            activo={vista === "clientes"}
+            onClick={() => navegar("clientes")}
+            icono="♧"
+          >
+            Clientes
+          </BotonMenu>
+          <p className="menu__grupo">Ventas y logística</p>
+          <button className="menu__item menu__item--proximamente" disabled>
+            <span>↗</span>Ventas y rentabilidad<em>Próximo</em>
+          </button>
+          <button className="menu__item menu__item--proximamente" disabled>
+            <span>⇢</span>Logística<em>Próximo</em>
+          </button>
+        </nav>
+        <div className="barra-lateral__pie">
+          <small>Gestión Fontana</small>
+        </div>
+      </aside>
+      <main className="contenido-principal">
+        <header className="cabecera">
+          <div>
+            <span className="miga">Admin / </span>
+            <strong>{nombreVista(vista)}</strong>
+          </div>
+          <div className="cabecera__acciones">
+            <button
+              className="boton-icono"
+              aria-label="Cambiar tema"
+              onClick={() => setOscuro(!oscuro)}
+            >
+              {oscuro ? "☼" : "◐"}
+            </button>
+          </div>
+        </header>
+        {error && (
+          <div className="aviso-error" role="alert">
+            <span>{error}</span>
+            <button onClick={() => void cargarDatos()}>Reintentar</button>
+          </div>
+        )}
+        {cargando ? (
+          <section className="pagina">
+            <div className="vacio">
+              <strong>Cargando información…</strong>
+            </div>
+          </section>
+        ) : (
+          <>
+            {vista === "inicio" && (
+              <Inicio
+                navegar={navegar}
+                productos={productos}
+                lotes={lotes}
+                compras={compras}
+              />
+            )}
+            {vista === "precios" && (
+              <ListaPrecios productos={productos} categorias={categorias} />
+            )}
+            {vista === "productos" && (
+              <TablaProductos productos={productos} categorias={categorias} />
+            )}
+            {vista === "lotes" && (
+              <TablaLotes
+                productos={productos}
+                lotes={lotes}
+                lotesAbiertos={lotesAbiertos}
+                setLotesAbiertos={setLotesAbiertos}
+                navegar={navegar}
+                categorias={categorias}
+              />
+            )}
+            {vista === "compras" && (
+              <RegistrarCompra
+                productos={productos}
+                guardando={guardando}
+                onGuardar={guardarFactura}
+              />
+            )}
+            {vista === "historialCompras" && (
+              <HistorialCompras compras={compras} navegar={navegar} />
+            )}
+            {vista === "clientes" && <ClientesPlaceholder />}
+          </>
+        )}
+      </main>
+    </div>
+  );
+}
+
+function BotonMenu({
+  activo,
+  onClick,
+  icono,
+  children,
+}: {
+  activo: boolean;
+  onClick: () => void;
+  icono: string;
+  children: string;
+}): JSX.Element {
+  return (
+    <button
+      className={activo ? "menu__item menu__item--activo" : "menu__item"}
+      onClick={onClick}
+    >
+      <span>{icono}</span>
+      {children}
+    </button>
+  );
+}
+
+function nombreVista(vista: Vista): string {
+  return {
+    inicio: "Panel de inicio",
+    precios: "Lista de precios",
+    productos: "Stock de productos",
+    lotes: "Lotes",
+    compras: "Registrar compra",
+    historialCompras: "Historial de compras",
+    clientes: "Clientes",
+  }[vista];
+}
+
+function Inicio({
+  navegar,
+  productos,
+  lotes,
+  compras,
+}: {
+  navegar: (vista: Vista) => void;
+  productos: ProductoInventario[];
+  lotes: LoteDetalle[];
+  compras: CompraHistorial[];
+}): JSX.Element {
+  const unidades = productos.reduce(
+    (total, producto) => total + producto.stockTotal,
+    0,
+  );
+  const alertas = lotes.filter(
+    (lote) =>
+      lote.cantidadOriginal > 0 &&
+      lote.cantidadRestante / lote.cantidadOriginal < 0.25,
+  ).length;
+  const comprasMes = compras
+    .filter(
+      (compra) => compra.fechaCompra.slice(0, 7) === fechaHoy().slice(0, 7),
+    )
+    .reduce((total, compra) => total + compra.montoTotal, 0);
+  return (
+    <section className="pagina">
+      <div className="pagina__encabezado">
+        <div>
+          <p className="eyebrow">
+            {new Date().toLocaleDateString("es-AR", { dateStyle: "full" })}
+          </p>
+          <h1>Panel de inicio</h1>
+          <p className="subtitulo">
+            Resumen de la operación de Fontana Distribuciones.
+          </p>
+        </div>
+        <button
+          className="boton boton--primario"
+          onClick={() => navegar("compras")}
+        >
+          ＋ Registrar compra
+        </button>
+      </div>
+      <div className="tarjetas">
+        <article className="tarjeta tarjeta--verde">
+          <strong>
+            {productos.filter((producto) => producto.estaActivo).length}
+          </strong>
+          <span>Productos activos</span>
+          <small>Catálogo vigente</small>
+        </article>
+        <article className="tarjeta">
+          <strong>{unidades}</strong>
+          <span>Unidades en stock</span>
+          <small>Distribuidas en {lotes.length} lotes</small>
+        </article>
+        <article className="tarjeta tarjeta--alerta">
+          <strong>{alertas}</strong>
+          <span>Alertas de inventario</span>
+          <small>Lotes con menos del 25%</small>
+        </article>
+        <article className="tarjeta">
+          <strong>{dinero(comprasMes)}</strong>
+          <span>Compras del mes</span>
+          <small>Según facturas registradas</small>
+        </article>
+      </div>
+      <div className="seccion-doble">
+        <article className="panel">
+          <h2>Operación rápida</h2>
+          <p>Las compras crean lotes y actualizan el stock automáticamente.</p>
+          <div className="acciones-rapidas">
+            <button
+              className="boton boton--primario"
+              onClick={() => navegar("productos")}
+            >
+              Ver stock
+            </button>
+            <button
+              className="boton boton--secundario"
+              onClick={() => navegar("lotes")}
+            >
+              Ver lotes
+            </button>
+            <button
+              className="boton boton--secundario"
+              onClick={() => navegar("precios")}
+            >
+              Lista de precios
+            </button>
+          </div>
+        </article>
+        <article className="panel panel--verde">
+          <p className="eyebrow">Siguiente módulo</p>
+          <h2>Pedidos y rentabilidad</h2>
+          <p>Este módulo todavía no está conectado.</p>
+        </article>
+      </div>
+    </section>
+  );
+}
+
+function Filtros({
+  categorias,
+  onBuscar,
+  categoria,
+  onCategoria,
+}: {
+  categorias: string[];
+  onBuscar?: (texto: string) => void;
+  categoria: string;
+  onCategoria: (categoria: string) => void;
+}): JSX.Element {
+  return (
+    <div className="barra-filtros">
+      <label className="buscador">
+        <span>⌕</span>
+        <input
+          onChange={(evento) => onBuscar?.(evento.target.value)}
+          placeholder="Buscar por SKU o nombre..."
+        />
+      </label>
+      <select
+        value={categoria}
+        onChange={(evento) => onCategoria(evento.target.value)}
+      >
+        <option value="">Todas las categorías</option>
+        {categorias.map((item) => (
+          <option key={item} value={item}>
+            {item}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function TablaProductos({
+  productos,
+  categorias,
+}: {
+  productos: ProductoInventario[];
+  categorias: string[];
+}): JSX.Element {
+  const [busqueda, setBusqueda] = useState("");
+  const [categoria, setCategoria] = useState("");
+  const lista = productos.filter(
+    (producto) =>
+      `${producto.sku} ${producto.nombre}`
+        .toLowerCase()
+        .includes(busqueda.toLowerCase()) &&
+      (!categoria || producto.categoria === categoria),
+  );
+  return (
+    <section className="pagina">
+      <div className="pagina__encabezado">
+        <div>
+          <p className="eyebrow">Operaciones / Stock</p>
+          <h1>Stock de productos</h1>
+          <p className="subtitulo">
+            Stock actual por producto. El detalle de compras se consulta en
+            Lotes.
+          </p>
+        </div>
+      </div>
+      <Filtros
+        categorias={categorias}
+        onBuscar={setBusqueda}
+        categoria={categoria}
+        onCategoria={setCategoria}
+      />
+      <div className="tabla-contenedor">
+        <table>
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Descripción del artículo</th>
+              <th>Categoría</th>
+              <th>Precio público</th>
+              <th>Stock actual</th>
+            </tr>
+          </thead>
+          <tbody>
+            {lista.map((producto) => (
+              <tr key={producto.id}>
+                <td>
+                  <strong>{producto.sku}</strong>
+                </td>
+                <td>{producto.nombre}</td>
+                <td>
+                  <span className="etiqueta-categoria">
+                    {producto.categoria}
+                  </span>
+                </td>
+                <td>{dinero(producto.precioVenta)}</td>
+                <td>
+                  <strong>{producto.stockTotal}</strong>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {lista.length === 0 && (
+          <EstadoVacio texto="No hay productos para mostrar." />
+        )}
+      </div>
+    </section>
+  );
+}
+
+function TablaLotes({
+  productos,
+  lotes,
+  lotesAbiertos,
+  setLotesAbiertos,
+  navegar,
+  categorias,
+}: {
+  productos: ProductoInventario[];
+  lotes: LoteDetalle[];
+  lotesAbiertos: Set<string>;
+  setLotesAbiertos: (valor: Set<string>) => void;
+  navegar: (vista: Vista) => void;
+  categorias: string[];
+}): JSX.Element {
+  const [busqueda, setBusqueda] = useState("");
+  const [categoria, setCategoria] = useState("");
+  const lista = productos.filter(
+    (producto) =>
+      `${producto.sku} ${producto.nombre}`
+        .toLowerCase()
+        .includes(busqueda.toLowerCase()) &&
+      (!categoria || producto.categoria === categoria),
+  );
+  const alternar = (id: string): void => {
+    const siguiente = new Set(lotesAbiertos);
+    siguiente.has(id) ? siguiente.delete(id) : siguiente.add(id);
+    setLotesAbiertos(siguiente);
+  };
+  return (
+    <section className="pagina">
+      <div className="pagina__encabezado">
+        <div>
+          <p className="eyebrow">Operaciones / Stock / Lotes</p>
+          <h1>Lotes</h1>
+          <p className="subtitulo">
+            Compras recibidas, remanente disponible y costo por lote.
+          </p>
+        </div>
+        <button
+          className="boton boton--primario"
+          onClick={() => navegar("compras")}
+        >
+          ＋ Registrar compra
+        </button>
+      </div>
+      <Filtros
+        categorias={categorias}
+        onBuscar={setBusqueda}
+        categoria={categoria}
+        onCategoria={setCategoria}
+      />
+      <div className="tabla-contenedor">
+        <table>
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Categoría</th>
+              <th>Stock actual</th>
+              <th>Lotes registrados</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {lista.map((producto) => {
+              const propios = lotes.filter(
+                (lote) => lote.productoId === producto.id,
+              );
+              const abierto = lotesAbiertos.has(producto.id);
+              return (
+                <Fragment key={producto.id}>
+                  <tr
+                    className={
+                      abierto
+                        ? "fila-producto fila-producto--abierta"
+                        : "fila-producto"
+                    }
+                  >
+                    <td>
+                      <div className="producto-celda">
+                        <button
+                          className="expansor"
+                          onClick={() => alternar(producto.id)}
+                          aria-expanded={abierto}
+                        >
+                          {abierto ? "⌄" : "›"}
+                        </button>
+                        <span>
+                          <strong>{producto.nombre}</strong>
+                          <small>{producto.sku}</small>
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="etiqueta-categoria">
+                        {producto.categoria}
+                      </span>
+                    </td>
+                    <td>
+                      <strong>{producto.stockTotal} u.</strong>
+                    </td>
+                    <td>{propios.length}</td>
+                    <td>
+                      <span
+                        className={
+                          producto.stockTotal > 0
+                            ? "estado estado--activo"
+                            : "estado estado--agotado"
+                        }
+                      >
+                        {producto.stockTotal > 0 ? "Disponible" : "Agotado"}
+                      </span>
+                    </td>
+                  </tr>
+                  {abierto &&
+                    propios.map((lote) => (
+                      <tr className="fila-lote" key={lote.id}>
+                        <td>
+                          <span className="lote-nombre">
+                            ↳ <strong>{lote.codigoLote}</strong>
+                            <small>
+                              {lote.numeroFactura
+                                ? `Factura ${lote.numeroFactura} · ${lote.proveedor ?? ""}`
+                                : "Compra registrada"}
+                            </small>
+                          </span>
+                        </td>
+                        <td>Costo: {dinero(lote.costoUnitario)}</td>
+                        <td>
+                          <strong>
+                            {lote.cantidadRestante} / {lote.cantidadOriginal} u.
+                          </strong>
+                          <div className="barra-stock barra-stock--lote">
+                            <i
+                              style={{
+                                width: `${lote.cantidadOriginal ? (lote.cantidadRestante / lote.cantidadOriginal) * 100 : 0}%`,
+                              }}
+                            />
+                          </div>
+                        </td>
+                        <td>
+                          {lote.fechaVencimiento
+                            ? fechaVisible(lote.fechaVencimiento)
+                            : "Sin vencimiento"}
+                        </td>
+                        <td>
+                          <span
+                            className={
+                              lote.cantidadRestante > 0
+                                ? "estado estado--lote"
+                                : "estado estado--agotado"
+                            }
+                          >
+                            {lote.cantidadRestante > 0
+                              ? "Disponible"
+                              : "Agotado"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                </Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+        {lista.length === 0 && (
+          <EstadoVacio texto="No hay productos para mostrar." />
+        )}
+      </div>
+    </section>
+  );
+}
+
+function ListaPrecios({
+  productos,
+  categorias,
+}: {
+  productos: ProductoInventario[];
+  categorias: string[];
+}): JSX.Element {
+  const [busqueda, setBusqueda] = useState("");
+  const [categoria, setCategoria] = useState("");
+  const lista = productos.filter(
+    (producto) =>
+      `${producto.sku} ${producto.nombre}`
+        .toLowerCase()
+        .includes(busqueda.toLowerCase()) &&
+      (!categoria || producto.categoria === categoria),
+  );
+  return (
+    <section className="pagina">
+      <div className="pagina__encabezado">
+        <div>
+          <p className="eyebrow">Operaciones / Precios</p>
+          <h1>Lista de precios</h1>
+          <p className="subtitulo">
+            Precios y markup vigentes registrados en el catálogo.
+          </p>
+        </div>
+      </div>
+      <Filtros
+        categorias={categorias}
+        onBuscar={setBusqueda}
+        categoria={categoria}
+        onCategoria={setCategoria}
+      />
+      <div className="tabla-contenedor">
+        <table>
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Producto</th>
+              <th>Categoría</th>
+              <th>Stock</th>
+              <th>Precio público</th>
+              <th>Markup</th>
+            </tr>
+          </thead>
+          <tbody>
+            {lista.map((producto) => (
+              <tr key={producto.id}>
+                <td>{producto.sku}</td>
+                <td>
+                  <strong>{producto.nombre}</strong>
+                </td>
+                <td>{producto.categoria}</td>
+                <td>{producto.stockTotal}</td>
+                <td>
+                  <strong>{dinero(producto.precioVenta)}</strong>
+                </td>
+                <td>{porcentaje(producto.markupPct)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {lista.length === 0 && (
+          <EstadoVacio texto="No hay productos para mostrar." />
+        )}
+      </div>
+    </section>
+  );
+}
+
+function RegistrarCompra({
+  productos,
+  guardando,
+  onGuardar,
+}: {
+  productos: ProductoInventario[];
+  guardando: boolean;
+  onGuardar: (entrada: RegistrarCompraEntrada) => Promise<void>;
+}): JSX.Element {
+  return (
+    <section className="pagina">
+      <div className="pagina__encabezado">
+        <div>
+          <p className="eyebrow">Compras / Nueva compra</p>
+          <h1>Registrar nueva compra</h1>
+          <p className="subtitulo">
+            Cargá la factura: cada detalle generará un lote y sumará stock.
+          </p>
+        </div>
+      </div>
+      <FacturaFormulario
+        productos={productos.filter((producto) => producto.estaActivo)}
+        guardando={guardando}
+        onGuardar={onGuardar}
+      />
+    </section>
+  );
+}
+
+function FacturaFormulario({
+  productos,
+  guardando,
+  onGuardar,
+}: {
+  productos: ProductoInventario[];
+  guardando: boolean;
+  onGuardar: (entrada: RegistrarCompraEntrada) => Promise<void>;
+}): JSX.Element {
+  const [proveedor, setProveedor] = useState("");
+  const [numero, setNumero] = useState("");
+  const [fecha, setFecha] = useState(fechaHoy());
+  const [notas, setNotas] = useState("");
+  const [lineas, setLineas] = useState<LineaCompraFormulario[]>([
+    {
+      productoId: productos[0]?.id ?? "",
+      cantidad: 1,
+      costoUnitario: 0,
+      fechaVencimiento: "",
+    },
+  ]);
+  const agregar = (): void =>
+    setLineas((actuales) => [
+      ...actuales,
+      {
+        productoId: productos[0]?.id ?? "",
+        cantidad: 1,
+        costoUnitario: 0,
+        fechaVencimiento: "",
+      },
+    ]);
+  const total = lineas.reduce(
+    (suma, linea) => suma + linea.cantidad * linea.costoUnitario,
+    0,
+  );
+  const actualizarLinea = (
+    indice: number,
+    cambio: Partial<LineaCompraFormulario>,
+  ): void =>
+    setLineas((actuales) =>
+      actuales.map((actual, i) =>
+        i === indice ? { ...actual, ...cambio } : actual,
+      ),
+    );
+  const enviar = (evento: FormEvent<HTMLFormElement>): void => {
+    evento.preventDefault();
+    void onGuardar({
+      nroFactura: numero,
+      proveedor,
+      fechaCompra: fecha,
+      notas: notas || null,
+      lineas: lineas.map((linea) => ({
+        productoId: linea.productoId,
+        cantidad: linea.cantidad,
+        costoUnitario: linea.costoUnitario,
+        fechaVencimiento: linea.fechaVencimiento || null,
+      })),
+    });
+  };
+  const valido = Boolean(
+    proveedor.trim() &&
+    numero.trim() &&
+    fecha &&
+    productos.length > 0 &&
+    lineas.length > 0 &&
+    lineas.every(
+      (linea) =>
+        linea.productoId && linea.cantidad > 0 && linea.costoUnitario >= 0,
+    ),
+  );
+  return (
+    <form className="formulario-factura" onSubmit={enviar}>
+      <div className="panel">
+        <h2>Cabecera de factura</h2>
+        <div className="campos-grid">
+          <label>
+            Fecha de compra
+            <input
+              type="date"
+              required
+              value={fecha}
+              onChange={(evento) => setFecha(evento.target.value)}
+            />
+          </label>
+          <label>
+            Número de factura
+            <input
+              required
+              value={numero}
+              onChange={(evento) => setNumero(evento.target.value)}
+              placeholder="Número de comprobante"
+            />
+          </label>
+          <label>
+            Proveedor
+            <input
+              required
+              value={proveedor}
+              onChange={(evento) => setProveedor(evento.target.value)}
+              placeholder="Nombre del proveedor"
+            />
+          </label>
+          <label>
+            Notas
+            <input
+              value={notas}
+              onChange={(evento) => setNotas(evento.target.value)}
+              placeholder="Opcional"
+            />
+          </label>
+        </div>
+      </div>
+      <div className="panel">
+        <div className="panel__encabezado">
+          <div>
+            <h2>Detalle de compra</h2>
+            <p>Cada renglón crea un lote asociado al producto.</p>
+          </div>
+          <button
+            type="button"
+            className="boton boton--secundario"
+            disabled={productos.length === 0}
+            onClick={agregar}
+          >
+            ＋ Añadir producto
+          </button>
+        </div>
+        {productos.length === 0 ? (
+          <EstadoVacio texto="No hay productos activos. Primero necesitás productos en el catálogo." />
+        ) : (
+          <div className="lineas-factura">
+            {lineas.map((linea, indice) => (
+              <div className="linea-factura" key={indice}>
+                <select
+                  required
+                  value={linea.productoId}
+                  onChange={(evento) =>
+                    actualizarLinea(indice, { productoId: evento.target.value })
+                  }
+                >
+                  <option value="" disabled>
+                    Seleccionar producto
+                  </option>
+                  {productos.map((producto) => (
+                    <option key={producto.id} value={producto.id}>
+                      {producto.sku} · {producto.nombre}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  aria-label="Cantidad"
+                  type="number"
+                  min="1"
+                  step="1"
+                  required
+                  value={linea.cantidad}
+                  onChange={(evento) =>
+                    actualizarLinea(indice, {
+                      cantidad: Number(evento.target.value),
+                    })
+                  }
+                  placeholder="Cantidad"
+                />
+                <input
+                  aria-label="Costo unitario"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  required
+                  value={linea.costoUnitario}
+                  onChange={(evento) =>
+                    actualizarLinea(indice, {
+                      costoUnitario: Number(evento.target.value),
+                    })
+                  }
+                  placeholder="Costo unitario"
+                />
+                <input
+                  aria-label="Vencimiento"
+                  type="date"
+                  value={linea.fechaVencimiento}
+                  onChange={(evento) =>
+                    actualizarLinea(indice, {
+                      fechaVencimiento: evento.target.value,
+                    })
+                  }
+                />
+                <button
+                  type="button"
+                  className="accion-tabla"
+                  aria-label="Quitar producto"
+                  disabled={lineas.length === 1}
+                  onClick={() =>
+                    setLineas((actuales) =>
+                      actuales.filter((_, i) => i !== indice),
+                    )
+                  }
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="formulario-acciones">
+          <strong>Total factura: {dinero(total)}</strong>
+          <button
+            type="submit"
+            className="boton boton--primario"
+            disabled={!valido || guardando}
+          >
+            {guardando ? "Guardando…" : "Guardar factura y crear lotes"}
+          </button>
+        </div>
+      </div>
+    </form>
+  );
+}
+
+function HistorialCompras({
+  compras,
+  navegar,
+}: {
+  compras: CompraHistorial[];
+  navegar: (vista: Vista) => void;
+}): JSX.Element {
+  const [abiertas, setAbiertas] = useState<Set<string>>(new Set());
+  const alternar = (id: string): void => {
+    const siguiente = new Set(abiertas);
+    siguiente.has(id) ? siguiente.delete(id) : siguiente.add(id);
+    setAbiertas(siguiente);
+  };
+  return (
+    <section className="pagina">
+      <div className="pagina__encabezado">
+        <div>
+          <p className="eyebrow">Compras / Historial</p>
+          <h1>Historial de compras</h1>
+          <p className="subtitulo">
+            Facturas registradas, detalles y lotes creados.
+          </p>
+        </div>
+        <button
+          className="boton boton--primario"
+          onClick={() => navegar("compras")}
+        >
+          ＋ Nueva compra
+        </button>
+      </div>
+      <div className="tabla-contenedor">
+        <table>
+          <thead>
+            <tr>
+              <th>Factura</th>
+              <th>Fecha de compra</th>
+              <th>Proveedor</th>
+              <th>Renglones</th>
+              <th>Costo total</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {compras.map((compra) => {
+              const abierta = abiertas.has(compra.id);
+              return (
+                <Fragment key={compra.id}>
+                  <tr>
+                    <td>
+                      <strong>{compra.nroFactura}</strong>
+                    </td>
+                    <td>{fechaVisible(compra.fechaCompra)}</td>
+                    <td>{compra.proveedor}</td>
+                    <td>{compra.lineas.length}</td>
+                    <td>{dinero(compra.montoTotal)}</td>
+                    <td>
+                      <button
+                        className="enlace"
+                        aria-expanded={abierta}
+                        onClick={() => alternar(compra.id)}
+                      >
+                        {abierta ? "Ocultar detalle" : "Ver detalle"}
+                      </button>
+                    </td>
+                  </tr>
+                  {abierta && (
+                    <tr>
+                      <td colSpan={6}>
+                        <div className="detalle-compra">
+                          <strong>Productos de la factura</strong>
+                          <ul>
+                            {compra.lineas.map((linea) => (
+                              <li key={linea.id}>
+                                {linea.sku ?? "Sin SKU"} ·{" "}
+                                {linea.nombreProducto ?? "Producto"} —{" "}
+                                {linea.cantidad} u. ×{" "}
+                                {dinero(linea.costoUnitario)} ={" "}
+                                {dinero(
+                                  linea.subtotal ??
+                                    linea.cantidad * linea.costoUnitario,
+                                )}
+                                {linea.fechaVencimiento
+                                  ? ` · Vence ${fechaVisible(linea.fechaVencimiento)}`
+                                  : ""}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+        {compras.length === 0 && (
+          <EstadoVacio texto="Todavía no hay compras registradas." />
+        )}
+      </div>
+    </section>
+  );
+}
+
+function ClientesPlaceholder(): JSX.Element {
+  return (
+    <section className="pagina">
+      <div className="pagina__encabezado">
+        <div>
+          <p className="eyebrow">Personas / Clientes</p>
+          <h1>Clientes</h1>
+          <p className="subtitulo">
+            La gestión de clientes se conectará en la siguiente etapa.
+          </p>
+        </div>
+      </div>
+      <div className="tabla-contenedor">
+        <EstadoVacio texto="No hay un listado conectado todavía." />
+      </div>
+    </section>
+  );
+}
+
+function EstadoVacio({ texto }: { texto: string }): JSX.Element {
+  return (
+    <div className="vacio">
+      <strong>{texto}</strong>
+    </div>
+  );
+}
