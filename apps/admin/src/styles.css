@@ -85,6 +85,7 @@ button { cursor: pointer; }
 .linea-factura { grid-template-columns: 2fr 1fr .6fr 1fr 1fr 1fr auto; align-items: center; }
 .detalle-historial-compra { display: grid; gap: 18px; margin-top: 22px; }
 .detalle-historial-compra h2 { margin: -12px 0 0; font-size: 20px; }
+.detalle-modal__acciones { display: flex; justify-content: flex-end; }
 .resumen-factura { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 16px; border-radius: 12px; background: #f3f7f3; }
 .resumen-factura p { display: grid; gap: 6px; margin: 0; }
 .resumen-factura p span { color: #849188; font-size: 11px; }

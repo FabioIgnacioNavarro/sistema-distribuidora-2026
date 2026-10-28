@@ -1435,7 +1435,7 @@ function HistorialCompras({
   const [fechaHasta, setFechaHasta] = useState("");
   const [proveedor, setProveedor] = useState("");
   const [orden, setOrden] = useState<"recientes" | "antiguas">("recientes");
-  const [seleccionadaId, setSeleccionadaId] = useState(compras[0]?.id ?? "");
+  const [seleccionadaId, setSeleccionadaId] = useState<string | null>(null);
   const proveedores = Array.from(
     new Set(compras.map((compra) => compra.proveedor)),
   ).sort();
@@ -1447,8 +1447,9 @@ function HistorialCompras({
       const comparacion = a.fechaCompra.localeCompare(b.fechaCompra);
       return orden === "recientes" ? -comparacion : comparacion;
     });
-  const compraSeleccionada =
-    filtradas.find((compra) => compra.id === seleccionadaId) ?? filtradas[0];
+  const compraSeleccionada = filtradas.find(
+    (compra) => compra.id === seleccionadaId,
+  );
   const productosPorId = new Map(
     productos.map((producto) => [producto.id, producto]),
   );
@@ -1536,14 +1537,7 @@ function HistorialCompras({
                 lotes.find((item) => item.facturaCompraId === compra.id)
                   ?.codigoLote ?? compra.nroFactura;
               return (
-                <tr
-                  key={compra.id}
-                  className={
-                    compra.id === compraSeleccionada?.id
-                      ? "fila-producto fila-producto--abierta"
-                      : undefined
-                  }
-                >
+                <tr key={compra.id}>
                   <td>
                     <strong>{compra.nroFactura}</strong>
                   </td>
@@ -1554,7 +1548,7 @@ function HistorialCompras({
                   <td>
                     <button
                       className="enlace"
-                      aria-pressed={compra.id === compraSeleccionada?.id}
+                      aria-label={`Ver detalle de ${compra.nroFactura}`}
                       onClick={() => setSeleccionadaId(compra.id)}
                     >
                       Ver detalle
@@ -1570,73 +1564,102 @@ function HistorialCompras({
         )}
       </div>
       {compraSeleccionada && (
-        <section className="panel detalle-historial-compra">
-          <p className="eyebrow">Detalle de factura</p>
-          <h2>
-            {compraSeleccionada.nroFactura} · {codigoLote}
-          </h2>
-          <div className="resumen-factura">
-            <p>
-              <span>Factura</span>
-              <strong>{compraSeleccionada.nroFactura}</strong>
-            </p>
-            <p>
-              <span>Fecha de compra</span>
-              <strong>{fechaVisible(compraSeleccionada.fechaCompra)}</strong>
-            </p>
-            <p>
-              <span>Proveedor</span>
-              <strong>{compraSeleccionada.proveedor}</strong>
-            </p>
-            <p>
-              <span>Costo total</span>
-              <strong>{dinero(compraSeleccionada.montoTotal)}</strong>
-            </p>
-          </div>
-          <div className="tabla-contenedor">
-            <table>
-              <thead>
-                <tr>
-                  <th>Producto</th>
-                  <th>Categoría</th>
-                  <th>Cantidad</th>
-                  <th>Costo unitario</th>
-                  <th>Subtotal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {compraSeleccionada.lineas.map((linea) => (
-                  <tr key={linea.id}>
-                    <td>
-                      <strong>
-                        {linea.nombreProducto ?? linea.sku ?? "Producto"}
-                      </strong>
-                    </td>
-                    <td>
-                      {linea.productoId
-                        ? (productosPorId.get(linea.productoId)?.categoria ??
-                          "Sin categoría")
-                        : "Sin categoría"}
-                    </td>
-                    <td>{linea.cantidad}</td>
-                    <td>{dinero(linea.costoUnitario)}</td>
-                    <td>
-                      {dinero(
-                        linea.subtotal ?? linea.cantidad * linea.costoUnitario,
-                      )}
-                    </td>
+        <div
+          className="modal-fondo"
+          role="presentation"
+          onMouseDown={(evento) => {
+            if (evento.target === evento.currentTarget) setSeleccionadaId(null);
+          }}
+        >
+          <section
+            className="modal-tarjeta detalle-historial-compra"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titulo-detalle-compra"
+          >
+            <button
+              className="modal-cerrar"
+              aria-label="Cerrar detalle de compra"
+              onClick={() => setSeleccionadaId(null)}
+            >
+              ×
+            </button>
+            <p className="eyebrow">Detalle de factura</p>
+            <h2 id="titulo-detalle-compra">
+              {compraSeleccionada.nroFactura} · {codigoLote}
+            </h2>
+            <div className="resumen-factura">
+              <p>
+                <span>Factura</span>
+                <strong>{compraSeleccionada.nroFactura}</strong>
+              </p>
+              <p>
+                <span>Fecha de compra</span>
+                <strong>{fechaVisible(compraSeleccionada.fechaCompra)}</strong>
+              </p>
+              <p>
+                <span>Proveedor</span>
+                <strong>{compraSeleccionada.proveedor}</strong>
+              </p>
+              <p>
+                <span>Costo total</span>
+                <strong>{dinero(compraSeleccionada.montoTotal)}</strong>
+              </p>
+            </div>
+            <div className="tabla-contenedor">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>Categoría</th>
+                    <th>Cantidad</th>
+                    <th>Costo unitario</th>
+                    <th>Subtotal</th>
                   </tr>
-                ))}
-                <tr className="fila-total">
-                  <td colSpan={4} className="texto-total-lote">
-                    Total
-                  </td>
-                  <td>{dinero(compraSeleccionada.montoTotal)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
+                </thead>
+                <tbody>
+                  {compraSeleccionada.lineas.map((linea) => (
+                    <tr key={linea.id}>
+                      <td>
+                        <strong>
+                          {linea.nombreProducto ?? linea.sku ?? "Producto"}
+                        </strong>
+                      </td>
+                      <td>
+                        {linea.productoId
+                          ? (productosPorId.get(linea.productoId)?.categoria ??
+                            "Sin categoría")
+                          : "Sin categoría"}
+                      </td>
+                      <td>{linea.cantidad}</td>
+                      <td>{dinero(linea.costoUnitario)}</td>
+                      <td>
+                        {dinero(
+                          linea.subtotal ??
+                            linea.cantidad * linea.costoUnitario,
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="fila-total">
+                    <td colSpan={4} className="texto-total-lote">
+                      Total
+                    </td>
+                    <td>{dinero(compraSeleccionada.montoTotal)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="detalle-modal__acciones">
+              <button
+                className="boton boton--secundario"
+                onClick={() => setSeleccionadaId(null)}
+              >
+                Cerrar
+              </button>
+            </div>
+          </section>
+        </div>
       )}
     </section>
   );
