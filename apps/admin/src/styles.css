@@ -64,6 +64,9 @@ button { cursor: pointer; }
 .barra-progreso-ambar { background: #f59e0b; }
 .barra-progreso-rojo { background: #ef4444; }
 .progreso-lote-en-linea strong { white-space: nowrap; font-size: 11px; }
+.progreso-stock-producto { min-width: 185px; gap: 8px; }
+.texto-progreso-stock { min-width: 32px; color: #718077; font-size: 11px; font-weight: 700; }
+.app--oscura .texto-progreso-stock { color: #bdcbbf; }
 .fila-total td { font-weight: 700; background: #f3f7f3; }
 .app--oscura .fila-total td { color: #d4e0d6; background: #223127; }
 .texto-total-lote { text-align: right; }

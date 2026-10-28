@@ -709,7 +709,43 @@ function TablaProductos({
                             {fechaVisible(lote.recibidoEn)}
                           </td>
                           <td>
-                            <strong>{lote.cantidadRestante}</strong>
+                            {(() => {
+                              const porcentajeRestante =
+                                lote.cantidadOriginal > 0
+                                  ? (lote.cantidadRestante /
+                                      lote.cantidadOriginal) *
+                                    100
+                                  : 0;
+                              const colorBarra =
+                                porcentajeRestante > 70
+                                  ? "barra-progreso-verde"
+                                  : porcentajeRestante > 30
+                                    ? "barra-progreso-ambar"
+                                    : "barra-progreso-rojo";
+                              return (
+                                <div className="progreso-lote-en-linea progreso-stock-producto">
+                                  <strong>{lote.cantidadRestante} u.</strong>
+                                  <div
+                                    className="barra-progreso-lote"
+                                    role="progressbar"
+                                    aria-label={`${lote.cantidadRestante} de ${lote.cantidadOriginal} unidades restantes`}
+                                    aria-valuemin={0}
+                                    aria-valuemax={lote.cantidadOriginal}
+                                    aria-valuenow={lote.cantidadRestante}
+                                  >
+                                    <span
+                                      className={`barra-progreso-lote-relleno ${colorBarra}`}
+                                      style={{
+                                        width: `${porcentajeRestante}%`,
+                                      }}
+                                    />
+                                  </div>
+                                  <span className="texto-progreso-stock">
+                                    {Math.round(porcentajeRestante)}%
+                                  </span>
+                                </div>
+                              );
+                            })()}
                           </td>
                           <td>—</td>
                         </tr>
