@@ -8,13 +8,11 @@
     "lib": ["ES2022", "DOM"],
     "skipLibCheck": true,
     "paths": {
-      "@distribuidora/tipos-compartidos": ["../../packages/tipos-compartidos/src/inventario.tipos.ts"]
+      "@distribuidora/tipos-compartidos": [
+        "../../packages/tipos-compartidos/src/admin.tipos.ts"
+      ]
     }
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "vite.config.ts"
-  ],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"],
   "exclude": ["node_modules"]
 }

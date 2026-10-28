@@ -6,11 +6,13 @@
 
 **Lotes:** Los lotes contendrán: los datos del proveedor, fecha, monto total. Cada detalle de compra tendrá: nombre del producto, cantidad, precio unitario. El descuento de stock al vender sigue siempre FIFO (lote más antiguo primero). Esta lógica es automática.
 
-**Control de stock:** Cada tipo de producto tiene una cantidad en stock, nombre, código de producto (SKU), y categoría. También está la posibilidad de controlar los lotes (compras) existentes tanto en la actualidad como histórico. El stock visible en lista de precios es un solo número por producto; el detalle por lote se ve en Stock → Lotes.
+**Control de stock:** Cada tipo de producto tiene una cantidad en stock, nombre, código de producto (SKU), y categoría. La vista **Stock de productos** muestra una fila por producto con el stock consolidado y un desplegable con los lotes que lo componen. La vista **Lotes** agrupa visualmente las líneas de una compra por código de lote; cada compra se despliega para mostrar sus productos, remanente, costo y subtotal. El remanente se acompaña con una barra de color: verde para disponibilidad alta, ámbar para media y rojo para baja o agotada. La lista de precios muestra un único total por producto.
 
 **Validación de stock:** Al intentar confirmar un pedido, si el stock disponible es insuficiente, la app muestra error bloqueante y no permite confirmar. No se permite stock negativo en V1.
 
 **Ajustes de inventario:** El Administrador puede realizar ajustes de stock manuales (merma, daño, corrección de inventario) con motivo obligatorio. Los ajustes negativos afectan al lote más antiguo disponible (FIFO).
+
+**Reinicio de fábrica para pruebas:** En desarrollo, el Administrador puede borrar compras/facturas, lotes, pedidos y sus líneas, cobranzas, rutas y entregas, ajustes de inventario y auditoría. El stock almacenado de los productos vuelve a cero. Se conservan productos, categorías, clientes, usuarios y configuración. La función solo se habilita con `HABILITAR_REINICIO_DE_FABRICA=true` fuera de producción; la API exige confirmación explícita. No es una operación disponible en producción.
 
 **Descuento de stock:** El stock se descuenta de los lotes (FIFO) en el momento que el pedido pasa a estado "Preparado", no al crearse. Esto evita bloquear stock innecesariamente si el pedido se cancela antes de prepararse.
 
@@ -120,7 +122,10 @@
 8. El remito se previsualiza antes de confirmar y se puede imprimir con el formato comercial acordado
 9. La condición de pago, el vencimiento y el estado de cobro se gestionan separados del estado logístico del pedido
 10. Un pedido puede tener múltiples cobranzas y conserva el historial completo de esos movimientos
+11. Los productos pueden crearse manualmente desde la Lista de precios o automáticamente al cargar una factura de compra. En el alta automática, el SKU debe ser único y el producto comienza con `precioVenta = costoUnitario` y `markup = 0`; la primera existencia se registra como lote de esa factura.
+12. Un producto creado manualmente comienza sin stock y queda disponible para la app del vendedor a través del catálogo compartido. El precio y el markup se ajustan posteriormente desde la Lista de precios.
 
 ---
-*Documento versión 1.0 — Última actualización: Agosto 2026*
-*Los datos obligatorios por entidad se definirán en el Modelo Relacional (MR).*
+
+_Documento versión 1.0 — Última actualización: Agosto 2026_
+_Los datos obligatorios por entidad se definirán en el Modelo Relacional (MR)._
