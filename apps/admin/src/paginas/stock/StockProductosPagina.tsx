@@ -5,6 +5,7 @@ import type {
 } from "@distribuidora/tipos-compartidos";
 import { EstadoVacio, Filtros, Paginador } from "../../components";
 import { REGISTROS_POR_PAGINA, dinero, fechaVisible } from "../../comun/formato";
+import "./StockProductosPagina.css";
 
 interface StockProductosPaginaProps {
   productos: ProductoInventario[];

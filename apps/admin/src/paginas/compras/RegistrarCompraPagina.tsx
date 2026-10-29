@@ -7,6 +7,7 @@ import type {
 } from "@distribuidora/tipos-compartidos";
 import { BuscadorLista } from "../../components";
 import { dinero, fechaHoy } from "../../comun/formato";
+import "./compras.css";
 
 interface LineaCompraFormulario {
   productoId: string | null;

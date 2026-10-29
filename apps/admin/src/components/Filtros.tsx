@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import "./Filtros.css";
 
 interface FiltrosProps {
   categorias: string[];

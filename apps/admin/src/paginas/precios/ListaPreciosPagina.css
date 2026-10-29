@@ -1,0 +1,78 @@
+.campo-tabla {
+  width: 110px;
+  min-height: 36px;
+  padding: 7px 9px;
+  color: inherit;
+  border: 1px solid #dce6dd;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.campo-tabla-envoltorio {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 0 9px;
+  border: 1px solid #dce6dd;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.campo-tabla-envoltorio:focus-within {
+  border-color: #176b43;
+}
+
+.campo-tabla-simbolo {
+  color: #65736a;
+  font-size: 13px;
+  font-weight: 700;
+  user-select: none;
+}
+
+.campo-tabla-input {
+  width: 82px;
+  min-height: 34px;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+
+.markup-positivo {
+  color: #16803c;
+  font-weight: 700;
+}
+
+.markup-negativo {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.app--oscura .campo-tabla {
+  border-color: var(--borde);
+  background: var(--superficie-2);
+}
+
+.app--oscura .campo-tabla-envoltorio {
+  border-color: var(--borde);
+  background: var(--superficie-2);
+}
+
+.app--oscura .campo-tabla-envoltorio:focus-within {
+  border-color: #4ade80;
+}
+
+.app--oscura .campo-tabla-simbolo {
+  color: var(--secundario);
+}
+
+.app--oscura .markup-positivo {
+  color: #4ade80;
+}
+
+.app--oscura .markup-negativo {
+  color: #f87171;
+}

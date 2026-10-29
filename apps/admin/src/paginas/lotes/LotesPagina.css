@@ -1,0 +1,133 @@
+.filtros-lotes {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 20px;
+}
+
+.filtros-lotes > label:not(.filtros-lotes__agotados) {
+  display: grid;
+  gap: 7px;
+  color: #65736a;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.filtros-lotes select,
+.filtros-lotes input[type="date"] {
+  min-height: 42px;
+  padding: 9px 11px;
+  color: inherit;
+  border: 1px solid #dce6dd;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.app--oscura .filtros-lotes select,
+.app--oscura .filtros-lotes input[type="date"] {
+  color: inherit;
+  border-color: var(--borde);
+  background: var(--superficie-2);
+}
+
+.filtros-lotes__agotados {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #65736a;
+  font-size: 12px;
+}
+
+.filtros-lotes__agotados input {
+  accent-color: #176b43;
+}
+
+.detalle-lote-stock {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(130px, 1fr));
+  gap: 18px;
+  padding: 7px 12px 7px 36px;
+}
+
+.detalle-lote-stock span {
+  display: grid;
+  gap: 5px;
+}
+
+.detalle-lote-stock small {
+  color: #839189;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.detalle-lote-stock strong {
+  color: #536158;
+  font-size: 12px;
+}
+
+.app--oscura .detalle-lote-stock strong {
+  color: #d4e0d6;
+}
+
+.progreso-lote-en-linea {
+  display: flex;
+  min-width: 230px;
+  align-items: center;
+  gap: 10px;
+}
+
+.barra-progreso-lote {
+  width: 90px;
+  height: 8px;
+  flex: 0 0 90px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8e4;
+}
+
+.barra-progreso-lote-relleno {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.2s ease;
+}
+
+.barra-progreso-verde {
+  background: #22c55e;
+}
+
+.barra-progreso-ambar {
+  background: #f59e0b;
+}
+
+.barra-progreso-rojo {
+  background: #ef4444;
+}
+
+.progreso-lote-en-linea strong {
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.fila-total td {
+  font-weight: 700;
+  background: #f3f7f3;
+}
+
+.app--oscura .fila-total td {
+  color: #d4e0d6;
+  background: #223127;
+}
+
+.texto-total-lote {
+  text-align: right;
+}
+
+@media (max-width: 900px) {
+  .filtros-lotes {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+  }
+}

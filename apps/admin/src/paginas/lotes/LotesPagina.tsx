@@ -6,6 +6,7 @@ import type {
 import { BuscadorLista, EstadoVacio, Filtros, Paginador } from "../../components";
 import { REGISTROS_POR_PAGINA, dinero, fechaVisible } from "../../comun/formato";
 import type { Vista } from "../../comun/tipos";
+import "./LotesPagina.css";
 
 interface LotesPaginaProps {
   productos: ProductoInventario[];

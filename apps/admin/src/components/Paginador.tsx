@@ -1,4 +1,5 @@
 import { REGISTROS_POR_PAGINA } from "../comun/formato";
+import "./Paginador.css";
 
 interface PaginadorProps {
   total: number;
