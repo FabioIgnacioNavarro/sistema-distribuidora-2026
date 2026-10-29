@@ -1,0 +1,239 @@
+.barra-lateral {
+  width: 250px;
+  flex: 0 0 250px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 26px 16px 18px;
+  background: #fff;
+  border-right: 1px solid #e2e9e2;
+}
+
+.app--oscura .barra-lateral,
+.app--oscura .cabecera {
+  background: #162119;
+  border-color: #304536;
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #176b43;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  line-height: 1.1;
+}
+
+.marca small {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+}
+
+.marca__simbolo {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  color: #fff;
+  border-radius: 11px;
+  background: #176b43;
+  font-size: 20px;
+  letter-spacing: 0;
+}
+
+.perfil {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 38px 8px 26px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e7eee8;
+}
+
+.app--oscura .perfil {
+  border-color: #304536;
+}
+
+.perfil span:last-child,
+.perfil small {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.perfil small,
+.barra-lateral__pie small,
+.miga {
+  color: var(--secundario, #75827a);
+  font-size: 12px;
+}
+
+.avatar {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  color: #176b43;
+  border-radius: 50%;
+  background: #dceee0;
+  font-weight: 800;
+}
+
+.avatar--pequeno {
+  width: 32px;
+  height: 32px;
+}
+
+.menu {
+  display: grid;
+  gap: 4px;
+}
+
+.menu__grupo {
+  margin: 20px 10px 6px;
+  color: #86948a;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.menu__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 12px;
+  color: #718077;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+  font-size: 13px;
+}
+
+.menu__item span {
+  width: 17px;
+  color: #829288;
+  text-align: center;
+  font-size: 17px;
+}
+
+.menu__item:hover,
+.menu__item--activo {
+  color: #176b43;
+  background: #e8f2e9;
+  font-weight: 800;
+}
+
+.app--oscura .menu__item:hover,
+.app--oscura .menu__item--activo {
+  background: #253d2c;
+  color: #a7d7b0;
+}
+
+.menu__item--proximamente {
+  opacity: 0.68;
+}
+
+.menu__item em {
+  margin-left: auto;
+  color: #9aab9f;
+  font-size: 9px;
+  font-style: normal;
+}
+
+.barra-lateral__pie {
+  margin-top: auto;
+}
+
+.barra-lateral__pie small {
+  display: block;
+  padding: 18px 12px 0;
+}
+
+.contenido-principal {
+  flex: 1;
+  min-width: 0;
+}
+
+.cabecera {
+  display: flex;
+  height: 76px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 42px;
+  background: #fff;
+  border-bottom: 1px solid #e2e9e2;
+}
+
+.cabecera strong {
+  font-size: 13px;
+}
+
+.cabecera__acciones {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.boton-icono,
+.notificacion {
+  position: relative;
+  display: grid;
+  width: 35px;
+  height: 35px;
+  place-items: center;
+  color: #63736a;
+  border: 1px solid #dfe8e0;
+  border-radius: 10px;
+  background: transparent;
+}
+
+.notificacion {
+  border: 0;
+  font-size: 19px;
+}
+
+.notificacion i {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #d57d43;
+}
+
+.pagina {
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 42px;
+}
+
+.pagina__encabezado {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 30px;
+}
+
+.pagina h1 {
+  margin: 0;
+  color: inherit;
+  font-size: 32px;
+  letter-spacing: -0.04em;
+}
+
+@media (max-width: 1100px) {
+  .barra-lateral {
+    width: 220px;
+    flex-basis: 220px;
+  }
+  .pagina {
+    padding: 30px;
+  }
+}
