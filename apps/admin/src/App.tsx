@@ -60,6 +60,9 @@ const fechaHoy = (): string => {
   return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`;
 };
 
+const idFacturaVisible = (numero: number): string =>
+  `F-${String(numero).padStart(4, "0")}`;
+
 const REGISTROS_POR_PAGINA = 20;
 
 function Paginador({
@@ -383,6 +386,7 @@ export default function App(): JSX.Element {
             {vista === "compras" && (
               <RegistrarCompra
                 productos={productos}
+                compras={compras}
                 guardando={guardando}
                 onGuardar={guardarFactura}
               />
@@ -657,17 +661,20 @@ function Filtros({
         />
       </label>
       {mostrarCategoria && (
-        <select
-          value={categoria}
-          onChange={(evento) => onCategoria(evento.target.value)}
-        >
-          <option value="">Todas las categorías</option>
-          {categorias.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
+        <label>
+          Categoría
+          <select
+            value={categoria}
+            onChange={(evento) => onCategoria(evento.target.value)}
+          >
+            <option value="">Todas las categorías</option>
+            {categorias.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </label>
       )}
       {children}
     </div>
@@ -817,24 +824,28 @@ function TablaProductos({
         categoria={categoria}
         onCategoria={setCategoria}
       >
-        <select
-          aria-label="Ordenar por precio de venta"
-          value={ordenPrecio}
-          onChange={(evento) => setOrdenPrecio(evento.target.value)}
-        >
-          <option value="ninguno">Precio venta · sin ordenar</option>
-          <option value="asc">Precio · menor a mayor</option>
-          <option value="desc">Precio · mayor a menor</option>
-        </select>
-        <select
-          aria-label="Ordenar por cantidad en stock"
-          value={ordenStock}
-          onChange={(evento) => setOrdenStock(evento.target.value)}
-        >
-          <option value="ninguno">Stock · sin ordenar</option>
-          <option value="desc">Stock · mayor a menor</option>
-          <option value="asc">Stock · menor a mayor</option>
-        </select>
+        <label>
+          Ordenar precio
+          <select
+            value={ordenPrecio}
+            onChange={(evento) => setOrdenPrecio(evento.target.value)}
+          >
+            <option value="ninguno">Sin ordenar</option>
+            <option value="asc">Menor a mayor</option>
+            <option value="desc">Mayor a menor</option>
+          </select>
+        </label>
+        <label>
+          Ordenar stock
+          <select
+            value={ordenStock}
+            onChange={(evento) => setOrdenStock(evento.target.value)}
+          >
+            <option value="ninguno">Sin ordenar</option>
+            <option value="desc">Mayor a menor</option>
+            <option value="asc">Menor a mayor</option>
+          </select>
+        </label>
       </Filtros>
       <div className="tabla-contenedor">
         <table>
@@ -1265,6 +1276,32 @@ function TablaLotes({
   );
 }
 
+function FormatoMarkupReal({
+  min,
+  max,
+  cantidadLotes,
+}: {
+  min: number | null;
+  max: number | null;
+  cantidadLotes: number;
+}): JSX.Element {
+  if (min === null) return <span>—</span>;
+  if (cantidadLotes === 1 || min === max) {
+    const clase = min <= 0 ? "markup-negativo" : "markup-positivo";
+    return <span className={clase}>{porcentaje(min)}</span>;
+  }
+  const maxVal = max ?? min;
+  const claseMin = min <= 0 ? "markup-negativo" : "markup-positivo";
+  const claseMax = maxVal <= 0 ? "markup-negativo" : "markup-positivo";
+  return (
+    <span>
+      <span className={claseMin}>{porcentaje(min)}</span>
+      {" — "}
+      <span className={claseMax}>{porcentaje(maxVal)}</span>
+    </span>
+  );
+}
+
 function ListaPrecios({
   productos,
   categorias,
@@ -1332,24 +1369,28 @@ function ListaPrecios({
         categoria={categoria}
         onCategoria={setCategoria}
       >
-        <select
-          aria-label="Ordenar por markup"
-          value={ordenMarkup}
-          onChange={(evento) => setOrdenMarkup(evento.target.value)}
-        >
-          <option value="ninguno">Markup · sin ordenar</option>
-          <option value="desc">Markup · mayor a menor</option>
-          <option value="asc">Markup · menor a mayor</option>
-        </select>
-        <select
-          aria-label="Ordenar por stock"
-          value={ordenStock}
-          onChange={(evento) => setOrdenStock(evento.target.value)}
-        >
-          <option value="ninguno">Stock · sin ordenar</option>
-          <option value="desc">Stock · mayor a menor</option>
-          <option value="asc">Stock · menor a mayor</option>
-        </select>
+        <label>
+          Ordenar markup
+          <select
+            value={ordenMarkup}
+            onChange={(evento) => setOrdenMarkup(evento.target.value)}
+          >
+            <option value="ninguno">Sin ordenar</option>
+            <option value="desc">Mayor a menor</option>
+            <option value="asc">Menor a mayor</option>
+          </select>
+        </label>
+        <label>
+          Ordenar stock
+          <select
+            value={ordenStock}
+            onChange={(evento) => setOrdenStock(evento.target.value)}
+          >
+            <option value="ninguno">Sin ordenar</option>
+            <option value="desc">Mayor a menor</option>
+            <option value="asc">Menor a mayor</option>
+          </select>
+        </label>
       </Filtros>
       <div className="tabla-contenedor">
         <table>
@@ -1391,58 +1432,62 @@ function ListaPrecios({
                         <td>{producto.categoria}</td>
                         <td>{producto.stockTotal}</td>
                         <td>
-                          <input
-                            className="campo-tabla"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={edicion.precioVenta}
-                            onChange={(evento) =>
-                              cambiar({
-                                precioVenta: Number(evento.target.value),
-                              })
-                            }
-                            onBlur={() =>
-                              void onActualizarPrecios(
-                                producto.id,
-                                edicion.precioVenta,
-                                edicion.markupPct,
-                              )
-                            }
-                            aria-label={`Precio público de ${producto.nombre}`}
-                          />
+                          <div className="campo-tabla-envoltorio">
+                            <span className="campo-tabla-simbolo">$</span>
+                            <input
+                              className="campo-tabla-input"
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={edicion.precioVenta}
+                              onChange={(evento) =>
+                                cambiar({
+                                  precioVenta: Number(evento.target.value),
+                                })
+                              }
+                              onBlur={() =>
+                                void onActualizarPrecios(
+                                  producto.id,
+                                  edicion.precioVenta,
+                                  edicion.markupPct,
+                                )
+                              }
+                              aria-label={`Precio público de ${producto.nombre}`}
+                            />
+                          </div>
                         </td>
                         <td>
-                          <input
-                            className="campo-tabla"
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            value={edicion.markupPct}
-                            onChange={(evento) =>
-                              cambiar({
-                                markupPct: Number(evento.target.value),
-                              })
-                            }
-                            onBlur={() =>
-                              void onActualizarPrecios(
-                                producto.id,
-                                edicion.precioVenta,
-                                edicion.markupPct,
-                              )
-                            }
-                            aria-label={`Markup deseado de ${producto.nombre}`}
-                          />
+                          <div className="campo-tabla-envoltorio">
+                            <input
+                              className="campo-tabla-input"
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.01"
+                              value={edicion.markupPct}
+                              onChange={(evento) =>
+                                cambiar({
+                                  markupPct: Number(evento.target.value),
+                                })
+                              }
+                              onBlur={() =>
+                                void onActualizarPrecios(
+                                  producto.id,
+                                  edicion.precioVenta,
+                                  edicion.markupPct,
+                                )
+                              }
+                              aria-label={`Markup deseado de ${producto.nombre}`}
+                            />
+                            <span className="campo-tabla-simbolo">%</span>
+                          </div>
                         </td>
                         <td>
-                          {producto.markupRealMin === null
-                            ? "—"
-                            : producto.cantidadLotesActivos === 1 ||
-                                producto.markupRealMin ===
-                                  producto.markupRealMax
-                              ? porcentaje(producto.markupRealMin)
-                              : `${porcentaje(producto.markupRealMin)} — ${porcentaje(producto.markupRealMax ?? producto.markupRealMin)}`}
+                          <FormatoMarkupReal
+                            min={producto.markupRealMin}
+                            max={producto.markupRealMax}
+                            cantidadLotes={producto.cantidadLotesActivos}
+                          />
                         </td>
                       </>
                     );
@@ -1462,10 +1507,12 @@ function ListaPrecios({
 
 function RegistrarCompra({
   productos,
+  compras,
   guardando,
   onGuardar,
 }: {
   productos: ProductoInventario[];
+  compras: CompraHistorial[];
   guardando: boolean;
   onGuardar: (entrada: RegistrarCompraEntrada) => Promise<void>;
 }): JSX.Element {
@@ -1482,6 +1529,7 @@ function RegistrarCompra({
       </div>
       <FacturaFormulario
         productos={productos.filter((producto) => producto.estaActivo)}
+        compras={compras}
         guardando={guardando}
         onGuardar={onGuardar}
       />
@@ -1630,14 +1678,34 @@ function ModalNuevoProducto({
 
 function FacturaFormulario({
   productos,
+  compras,
   guardando,
   onGuardar,
 }: {
   productos: ProductoInventario[];
+  compras: CompraHistorial[];
   guardando: boolean;
   onGuardar: (entrada: RegistrarCompraEntrada) => Promise<void>;
 }): JSX.Element {
+  const proveedores = Array.from(
+    new Set(compras.map((compra) => compra.proveedor)),
+  ).sort();
   const [proveedor, setProveedor] = useState("");
+  const [proveedorNuevo, setProveedorNuevo] = useState("");
+  const [sucursal, setSucursal] = useState("");
+  const [sucursalNueva, setSucursalNueva] = useState("");
+  const sucursales = Array.from(
+    new Set(
+      compras
+        .filter(
+          (compra) =>
+            compra.proveedor ===
+            (proveedor === "__nuevo__" ? proveedorNuevo : proveedor),
+        )
+        .map((compra) => compra.sucursalProveedor)
+        .filter((valor): valor is string => Boolean(valor)),
+    ),
+  ).sort();
   const [numero, setNumero] = useState("");
   const [fecha, setFecha] = useState(fechaHoy());
   const [notas, setNotas] = useState("");
@@ -1681,7 +1749,8 @@ function FacturaFormulario({
     evento.preventDefault();
     void onGuardar({
       nroFactura: numero,
-      proveedor,
+      proveedor: proveedor === "__nuevo__" ? proveedorNuevo : proveedor,
+      sucursalProveedor: sucursal === "__nuevo__" ? sucursalNueva : sucursal,
       fechaCompra: fecha,
       notas: notas || null,
       lineas: lineas.map((linea) => ({
@@ -1694,7 +1763,8 @@ function FacturaFormulario({
     });
   };
   const valido = Boolean(
-    proveedor.trim() &&
+    (proveedor === "__nuevo__" ? proveedorNuevo.trim() : proveedor.trim()) &&
+    (sucursal === "__nuevo__" ? sucursalNueva.trim() : sucursal.trim()) &&
     numero.trim() &&
     fecha &&
     lineas.length > 0 &&
@@ -1730,13 +1800,59 @@ function FacturaFormulario({
           </label>
           <label>
             Proveedor
-            <input
-              required
-              value={proveedor}
-              onChange={(evento) => setProveedor(evento.target.value)}
-              placeholder="Nombre del proveedor"
+            <BuscadorLista
+              opciones={[
+                ...proveedores.map((nombre) => ({
+                  valor: nombre,
+                  etiqueta: nombre,
+                })),
+                { valor: "__nuevo__", etiqueta: "＋ Crear proveedor nuevo" },
+              ]}
+              valor={proveedor}
+              onCambiar={(valor) => {
+                setProveedor(valor);
+                setSucursal("");
+              }}
+              placeholder="Buscar proveedor..."
             />
           </label>
+          {proveedor === "__nuevo__" && (
+            <label>
+              Nuevo proveedor
+              <input
+                required
+                value={proveedorNuevo}
+                onChange={(evento) => setProveedorNuevo(evento.target.value)}
+                placeholder="Nombre del proveedor"
+              />
+            </label>
+          )}
+          <label>
+            Sucursal
+            <BuscadorLista
+              opciones={[
+                ...sucursales.map((nombre) => ({
+                  valor: nombre,
+                  etiqueta: nombre,
+                })),
+                { valor: "__nuevo__", etiqueta: "＋ Crear sucursal nueva" },
+              ]}
+              valor={sucursal}
+              onCambiar={setSucursal}
+              placeholder="Buscar sucursal..."
+            />
+          </label>
+          {sucursal === "__nuevo__" && (
+            <label>
+              Nueva sucursal
+              <input
+                required
+                value={sucursalNueva}
+                onChange={(evento) => setSucursalNueva(evento.target.value)}
+                placeholder="Ej. Mayorista Av. Alvear"
+              />
+            </label>
+          )}
           <label>
             Notas
             <input
@@ -2079,9 +2195,11 @@ function HistorialCompras({
           <thead>
             <tr>
               <th>IdFactura</th>
+              <th>N° factura</th>
               <th>Fecha de compra</th>
               <th>Nombre lote creado</th>
               <th>Proveedor</th>
+              <th>Sucursal</th>
               <th>Costo total</th>
               <th />
             </tr>
@@ -2099,11 +2217,13 @@ function HistorialCompras({
                 return (
                   <tr key={compra.id}>
                     <td>
-                      <strong>{compra.nroFactura}</strong>
+                      <strong>{idFacturaVisible(compra.numeroInterno)}</strong>
                     </td>
+                    <td>{compra.nroFactura}</td>
                     <td>{fechaVisible(compra.fechaCompra)}</td>
                     <td>{lote}</td>
                     <td>{compra.proveedor}</td>
+                    <td>{compra.sucursalProveedor ?? "—"}</td>
                     <td>{dinero(compra.montoTotal)}</td>
                     <td>
                       <button
@@ -2155,7 +2275,11 @@ function HistorialCompras({
             </h2>
             <div className="resumen-factura">
               <p>
-                <span>Factura</span>
+                <span>IdFactura</span>
+                <strong>{idFacturaVisible(compraSeleccionada.numeroInterno)}</strong>
+              </p>
+              <p>
+                <span>N° factura</span>
                 <strong>{compraSeleccionada.nroFactura}</strong>
               </p>
               <p>
@@ -2165,6 +2289,10 @@ function HistorialCompras({
               <p>
                 <span>Proveedor</span>
                 <strong>{compraSeleccionada.proveedor}</strong>
+              </p>
+              <p>
+                <span>Sucursal</span>
+                <strong>{compraSeleccionada.sucursalProveedor ?? "—"}</strong>
               </p>
               <p>
                 <span>Costo total</span>

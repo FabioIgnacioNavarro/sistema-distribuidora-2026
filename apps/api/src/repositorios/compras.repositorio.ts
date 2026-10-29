@@ -7,12 +7,13 @@ import { supabase } from "../lib/supabase";
 
 interface RespuestaRpcCompra {
   rpc: (
-    nombre: "registrar_compra",
+    nombre: "registrar_compra_con_sucursal",
     argumentos: {
       p_nro_factura: string;
       p_proveedor: string;
       p_fecha_compra: string;
       p_notas: string | null;
+      p_sucursal_proveedor: string;
       p_lineas: Array<{
         productoId: string | null;
         nuevoProducto: {
@@ -28,24 +29,48 @@ interface RespuestaRpcCompra {
   ) => Promise<{ data: string | null; error: { message: string } | null }>;
 }
 
+interface FacturaConsulta {
+  id: string;
+  numero_interno: number;
+  nro_factura: string;
+  proveedor: string;
+  sucursal_proveedor: string | null;
+  fecha_compra: string;
+  monto_total: number | null;
+  creado_en: string | null;
+  items_factura_compra: Array<{
+    id: string;
+    producto_id: string | null;
+    cantidad: number;
+    costo_unitario: number;
+    subtotal: number | null;
+    fecha_vencimiento: string | null;
+    productos: { sku: string; nombre: string } | null;
+  }>;
+}
+
 export async function registrarCompra(
   entrada: RegistrarCompraEntrada,
 ): Promise<string> {
   // El tipo Database es generado y aún no incluye la función de esta migración.
   const clienteRpc = supabase as unknown as RespuestaRpcCompra;
-  const { data, error } = await clienteRpc.rpc("registrar_compra", {
-    p_nro_factura: entrada.nroFactura,
-    p_proveedor: entrada.proveedor,
-    p_fecha_compra: entrada.fechaCompra,
-    p_notas: entrada.notas ?? null,
-    p_lineas: entrada.lineas.map((linea) => ({
-      productoId: linea.productoId ?? null,
-      nuevoProducto: linea.nuevoProducto ?? null,
-      cantidad: linea.cantidad,
-      costoUnitario: linea.costoUnitario,
-      fechaVencimiento: linea.fechaVencimiento ?? null,
-    })),
-  });
+  const { data, error } = await clienteRpc.rpc(
+    "registrar_compra_con_sucursal",
+    {
+      p_nro_factura: entrada.nroFactura,
+      p_proveedor: entrada.proveedor,
+      p_fecha_compra: entrada.fechaCompra,
+      p_notas: entrada.notas ?? null,
+      p_sucursal_proveedor: entrada.sucursalProveedor,
+      p_lineas: entrada.lineas.map((linea) => ({
+        productoId: linea.productoId ?? null,
+        nuevoProducto: linea.nuevoProducto ?? null,
+        cantidad: linea.cantidad,
+        costoUnitario: linea.costoUnitario,
+        fechaVencimiento: linea.fechaVencimiento ?? null,
+      })),
+    },
+  );
 
   if (error) throw new Error(error.message);
   if (!data)
@@ -56,18 +81,23 @@ export async function registrarCompra(
 }
 
 export async function obtenerHistorialCompras(): Promise<CompraHistorial[]> {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase
     .from("facturas_compra")
     .select(
-      "id, nro_factura, proveedor, fecha_compra, monto_total, creado_en, items_factura_compra(id, producto_id, cantidad, costo_unitario, subtotal, fecha_vencimiento, productos(sku, nombre))",
+      "id, numero_interno, nro_factura, proveedor, sucursal_proveedor, fecha_compra, monto_total, creado_en, items_factura_compra(id, producto_id, cantidad, costo_unitario, subtotal, fecha_vencimiento, productos(sku, nombre))",
     )
-    .order("fecha_compra", { ascending: false });
+    .order("fecha_compra", { ascending: false }) as unknown as Promise<{
+    data: FacturaConsulta[] | null;
+    error: { message: string } | null;
+  }>);
 
   if (error) throw new Error(error.message);
   return (data ?? []).map((factura) => ({
     id: factura.id,
+    numeroInterno: Number(factura.numero_interno),
     nroFactura: factura.nro_factura,
     proveedor: factura.proveedor,
+    sucursalProveedor: factura.sucursal_proveedor,
     fechaCompra: factura.fecha_compra,
     montoTotal: Number(factura.monto_total ?? 0),
     creadoEn: factura.creado_en,

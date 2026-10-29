@@ -59,6 +59,7 @@ export const lineaCompraSchema = z
 export const registrarCompraSchema = z.object({
   nroFactura: z.string().trim().min(1).max(100),
   proveedor: z.string().trim().min(1).max(200),
+  sucursalProveedor: z.string().trim().min(1).max(200),
   fechaCompra: fechaSchema,
   notas: z.string().trim().max(1000).nullable().optional(),
   lineas: z.array(lineaCompraSchema).min(1),
@@ -96,8 +97,10 @@ export interface CompraRegistrada {
 
 export interface CompraHistorial {
   id: string;
+  numeroInterno: number;
   nroFactura: string;
   proveedor: string;
+  sucursalProveedor: string | null;
   fechaCompra: string;
   montoTotal: number;
   creadoEn: string | null;
@@ -115,8 +118,10 @@ export interface CompraHistorial {
 
 export const compraHistorialSchema = z.object({
   id: z.string().uuid(),
+  numeroInterno: z.number().int(),
   nroFactura: z.string(),
   proveedor: z.string(),
+  sucursalProveedor: z.string().nullable(),
   fechaCompra: fechaSchema,
   montoTotal: z.number(),
   creadoEn: z.string().nullable(),
