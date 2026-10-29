@@ -5,3 +5,8 @@ export { ListaPreciosPagina } from "./precios/ListaPreciosPagina";
 export { RegistrarCompraPagina } from "./compras/RegistrarCompraPagina";
 export { HistorialComprasPagina } from "./compras/HistorialComprasPagina";
 export { ClientesPagina } from "./clientes/ClientesPagina";
+export { PedidosPagina } from "./pedidos/PedidosPagina";
+export { VentasResumenesPagina } from "./ventas/VentasResumenesPagina";
+export { VendedoresPagina } from "./vendedores/VendedoresPagina";
+export { GastosPagina } from "./gastos/GastosPagina";
+export { LogisticaPagina } from "./logistica/LogisticaPagina";

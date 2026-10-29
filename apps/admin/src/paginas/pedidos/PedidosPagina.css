@@ -1,0 +1,80 @@
+.modal-pedido {
+  width: min(100%, 940px);
+}
+
+.selector-tipo-cliente {
+  display: flex;
+  gap: 16px;
+  margin: 14px 0 20px;
+}
+
+.selector-tipo-cliente label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.seccion-lineas-pedido {
+  margin-top: 24px;
+}
+
+.tabla-lineas-pedido {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.tabla-lineas-pedido th,
+.tabla-lineas-pedido td {
+  padding: 10px 12px;
+}
+
+.tabla-lineas-pedido input {
+  min-height: 38px;
+  padding: 6px 10px;
+  border: 1px solid #dce6dd;
+  border-radius: 8px;
+  background: #fff;
+  color: inherit;
+}
+
+.app--oscura .tabla-lineas-pedido input {
+  border-color: var(--borde);
+  background: var(--superficie-2);
+}
+
+.detalle-pedido-tarjeta {
+  margin-top: 24px;
+}
+
+.resumen-cobro-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #f3f7f3;
+  margin-top: 18px;
+  margin-bottom: 20px;
+}
+
+.resumen-cobro-grid p {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+}
+
+.resumen-cobro-grid p span {
+  color: #849188;
+  font-size: 11px;
+}
+
+.resumen-cobro-grid p strong {
+  font-size: 14px;
+}
+
+.app--oscura .resumen-cobro-grid {
+  background: var(--superficie-2);
+}
