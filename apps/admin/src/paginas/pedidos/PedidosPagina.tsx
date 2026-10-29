@@ -2,7 +2,9 @@ import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import type {
   ClienteItem,
+  CondicionPagoPedido,
   CrearPedidoEntrada,
+  MedioAcreditacionPago,
   PedidoHistorialItem,
   ProductoInventario,
 } from "@distribuidora/tipos-compartidos";
@@ -10,6 +12,25 @@ import { BuscadorLista, EstadoVacio, Paginador } from "../../components";
 import { REGISTROS_POR_PAGINA, dinero } from "../../comun/formato";
 import type { Vista } from "../../comun/tipos";
 import "./PedidosPagina.css";
+
+function formatearCondicionPago(condicion: string): string {
+  switch (condicion) {
+    case "contado":
+    case "Contado":
+      return "Contado (todo de una)";
+    case "cuenta_corriente_7":
+    case "Cuenta corriente · 7 días":
+      return "Cuenta corriente · 7 días";
+    case "cuenta_corriente_14":
+    case "Cuenta corriente · 14 días":
+      return "Cuenta corriente · 14 días";
+    case "cuenta_corriente_30":
+    case "Cuenta corriente · 30 días":
+      return "Cuenta corriente · 30 días";
+    default:
+      return condicion;
+  }
+}
 
 interface PedidosPaginaProps {
   pedidos: PedidoHistorialItem[];
@@ -48,14 +69,10 @@ export function PedidosPagina({
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [nuevaDireccion, setNuevaDireccion] = useState("");
   const [nuevoTelefono, setNuevoTelefono] = useState("");
-  const [condicionPago, setCondicionPago] = useState<
-    | "contado"
-    | "transferencia"
-    | "cuenta_corriente_7"
-    | "cuenta_corriente_14"
-    | "cuenta_corriente_30"
-    | "tarjeta"
-  >("contado");
+  const [condicionPago, setCondicionPago] =
+    useState<CondicionPagoPedido>("contado");
+  const [medioPagoContado, setMedioPagoContado] =
+    useState<MedioAcreditacionPago>("efectivo");
   const [notas, setNotas] = useState("");
   const [lineas, setLineas] = useState<LineaFormulario[]>([
     { productoId: "", cantidad: 1, precioVentaUnitario: 0 },
@@ -203,6 +220,8 @@ export function PedidosPagina({
           : null,
         vendidoPorDueno: true,
         condicionPago,
+        medioPagoContado:
+          condicionPago === "contado" ? medioPagoContado : undefined,
         notas: notas.trim() || null,
         lineas: lineasValidas.map((l) => ({
           productoId: l.productoId,
@@ -218,6 +237,7 @@ export function PedidosPagina({
       setNuevaDireccion("");
       setNuevoTelefono("");
       setCondicionPago("contado");
+      setMedioPagoContado("efectivo");
       setNotas("");
       setLineas([{ productoId: "", cantidad: 1, precioVentaUnitario: 0 }]);
       setModalAbierto(false);
@@ -317,7 +337,7 @@ export function PedidosPagina({
                       </small>
                     )}
                   </td>
-                  <td>{p.condicionPago}</td>
+                  <td>{formatearCondicionPago(p.condicionPago)}</td>
                   <td>{p.fechaVencimiento ?? "—"}</td>
                   <td style={{ textAlign: "right" }}>
                     <strong>{dinero(p.importeTotal)}</strong>
@@ -408,7 +428,7 @@ export function PedidosPagina({
           <div className="resumen-cobro-grid">
             <p>
               <span>Condición de pago</span>
-              <strong>{pedidoSeleccionado.condicionPago}</strong>
+              <strong>{formatearCondicionPago(pedidoSeleccionado.condicionPago)}</strong>
             </p>
             <p>
               <span>Importe total</span>
@@ -564,26 +584,25 @@ export function PedidosPagina({
                 </div>
               )}
 
-              {/* Condición de pago y notas */}
-              <div className="campos-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
+              {/* Condición de pago, medio de acreditación y notas */}
+              <div
+                className="campos-grid"
+                style={{
+                  gridTemplateColumns:
+                    condicionPago === "contado" ? "1fr 1fr 1fr" : "1fr 1fr",
+                }}
+              >
                 <label>
                   <span>Condición de pago</span>
                   <select
                     value={condicionPago}
                     onChange={(e) =>
                       setCondicionPago(
-                        e.target.value as
-                          | "contado"
-                          | "transferencia"
-                          | "cuenta_corriente_7"
-                          | "cuenta_corriente_14"
-                          | "cuenta_corriente_30"
-                          | "tarjeta",
+                        e.target.value as CondicionPagoPedido,
                       )
                     }
                   >
-                    <option value="contado">Contado (cobro inmediato)</option>
-                    <option value="transferencia">Transferencia bancaria</option>
+                    <option value="contado">Contado (todo de una)</option>
                     <option value="cuenta_corriente_7">
                       Cuenta corriente · 7 días
                     </option>
@@ -593,9 +612,26 @@ export function PedidosPagina({
                     <option value="cuenta_corriente_30">
                       Cuenta corriente · 30 días
                     </option>
-                    <option value="tarjeta">Tarjeta</option>
                   </select>
                 </label>
+                {condicionPago === "contado" && (
+                  <label>
+                    <span>Medio de acreditación</span>
+                    <select
+                      value={medioPagoContado}
+                      onChange={(e) =>
+                        setMedioPagoContado(
+                          e.target.value as MedioAcreditacionPago,
+                        )
+                      }
+                    >
+                      <option value="efectivo">Efectivo</option>
+                      <option value="transferencia">
+                        Transferencia bancaria
+                      </option>
+                    </select>
+                  </label>
+                )}
                 <label>
                   <span>Notas del pedido</span>
                   <input

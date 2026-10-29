@@ -325,7 +325,8 @@ tbody tr:last-child td {
   font-weight: 800;
 }
 
-.campos-grid input {
+.campos-grid input,
+.campos-grid select {
   width: 100%;
   min-height: 42px;
   padding: 9px 11px;
@@ -335,7 +336,8 @@ tbody tr:last-child td {
   background: #fff;
 }
 
-.app--oscura .campos-grid input {
+.app--oscura .campos-grid input,
+.app--oscura .campos-grid select {
   color: inherit;
   border-color: var(--borde);
   background: var(--superficie-2);

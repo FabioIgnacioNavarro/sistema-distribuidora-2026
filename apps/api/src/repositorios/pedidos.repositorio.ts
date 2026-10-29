@@ -304,7 +304,7 @@ export async function crearPedido(
     );
   }
 
-  // 9. Si la condición fue contado, registrar cobranza automática
+  // 9. Si la condición fue contado, registrar cobranza automática (efectivo o transferencia)
   if (condicionData.codigo === "contado") {
     // Buscar persona admin para registrar la cobranza
     const { data: adminData } = await supabase
@@ -315,11 +315,16 @@ export async function crearPedido(
       .maybeSingle();
 
     if (adminData?.id) {
+      const medioTexto =
+        entrada.medioPagoContado === "transferencia"
+          ? "Transferencia"
+          : "Efectivo";
+
       await supabase.from("cobranzas").insert({
         pedido_id: pedidoData.id,
         monto: totalPedido,
-        medio_pago: "Efectivo",
-        observacion: "Cobro contado al emitir pedido",
+        medio_pago: medioTexto,
+        observacion: `Cobro contado acreditado por ${medioTexto.toLowerCase()}`,
         estado: "confirmada",
         registrado_por: adminData.id,
       });

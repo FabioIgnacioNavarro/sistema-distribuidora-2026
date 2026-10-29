@@ -19,6 +19,18 @@ export const nuevoClientePedidoSchema = z.object({
   tipoCliente: z.enum(["minorista", "mayorista"]).default("minorista"),
 });
 
+export const condicionPagoPedidoSchema = z.enum([
+  "contado",
+  "cuenta_corriente_7",
+  "cuenta_corriente_14",
+  "cuenta_corriente_30",
+]);
+
+export const medioAcreditacionPagoSchema = z.enum([
+  "efectivo",
+  "transferencia",
+]);
+
 export const lineaPedidoEntradaSchema = z.object({
   productoId: z.string().uuid(),
   cantidad: z.number().int().positive("La cantidad debe ser mayor a 0"),
@@ -31,14 +43,8 @@ export const crearPedidoSchema = z
     nuevoCliente: nuevoClientePedidoSchema.nullable().optional(),
     vendedorId: z.string().uuid().nullable().optional(),
     vendidoPorDueno: z.boolean().default(true),
-    condicionPago: z.enum([
-      "contado",
-      "transferencia",
-      "cuenta_corriente_7",
-      "cuenta_corriente_14",
-      "cuenta_corriente_30",
-      "tarjeta",
-    ]),
+    condicionPago: condicionPagoPedidoSchema,
+    medioPagoContado: medioAcreditacionPagoSchema.optional(),
     notas: z.string().trim().max(1000).nullable().optional(),
     lineas: z
       .array(lineaPedidoEntradaSchema)
@@ -147,6 +153,8 @@ export const configuracionComisionSchema = z.object({
 
 export type ClienteEntrada = z.infer<typeof clienteSchema>;
 export type NuevoClientePedidoEntrada = z.infer<typeof nuevoClientePedidoSchema>;
+export type CondicionPagoPedido = z.infer<typeof condicionPagoPedidoSchema>;
+export type MedioAcreditacionPago = z.infer<typeof medioAcreditacionPagoSchema>;
 export type LineaPedidoEntrada = z.infer<typeof lineaPedidoEntradaSchema>;
 export type CrearPedidoEntrada = z.infer<typeof crearPedidoSchema>;
 export type ClienteItem = z.infer<typeof clienteItemSchema>;
