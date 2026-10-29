@@ -24,6 +24,15 @@ import {
   obtenerEstadoReinicio,
   reiniciarDatosOperativos,
 } from "./repositorios/api.repositorio";
+import {
+  REGISTROS_POR_PAGINA,
+  dinero,
+  fechaHoy,
+  fechaVisible,
+  idFacturaVisible,
+  porcentaje,
+} from "./comun/formato";
+import { BuscadorLista, EstadoVacio, Filtros, Paginador } from "./components";
 
 type Vista =
   | "inicio"
@@ -43,60 +52,6 @@ interface LineaCompraFormulario {
   cantidad: number;
   costoUnitario: number;
   fechaVencimiento: string;
-}
-
-const dinero = (valor: number): string =>
-  valor.toLocaleString("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 2,
-  });
-const porcentaje = (valor: number): string =>
-  `${valor.toLocaleString("es-AR", { maximumFractionDigits: 2 })}%`;
-const fechaVisible = (valor: string): string =>
-  new Date(`${valor.slice(0, 10)}T12:00:00`).toLocaleDateString("es-AR");
-const fechaHoy = (): string => {
-  const hoy = new Date();
-  return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`;
-};
-
-const idFacturaVisible = (numero: number): string =>
-  `F-${String(numero).padStart(4, "0")}`;
-
-const REGISTROS_POR_PAGINA = 20;
-
-function Paginador({
-  total,
-  pagina,
-  onCambiar,
-}: {
-  total: number;
-  pagina: number;
-  onCambiar: (pagina: number) => void;
-}): JSX.Element | null {
-  const paginas = Math.max(1, Math.ceil(total / REGISTROS_POR_PAGINA));
-  if (total <= REGISTROS_POR_PAGINA) return null;
-  return (
-    <div className="paginador" aria-label="Paginación">
-      <button
-        className="boton boton--secundario"
-        disabled={pagina === 1}
-        onClick={() => onCambiar(pagina - 1)}
-      >
-        ← Anterior
-      </button>
-      <span>
-        Página {pagina} de {paginas}
-      </span>
-      <button
-        className="boton boton--secundario"
-        disabled={pagina === paginas}
-        onClick={() => onCambiar(pagina + 1)}
-      >
-        Siguiente →
-      </button>
-    </div>
-  );
 }
 
 export default function App(): JSX.Element {
@@ -631,125 +586,6 @@ function Inicio({
         </article>
       </div>
     </section>
-  );
-}
-
-function Filtros({
-  categorias,
-  onBuscar,
-  categoria,
-  onCategoria,
-  mostrarCategoria = true,
-  placeholder = "Buscar por SKU o nombre...",
-  children,
-}: {
-  categorias: string[];
-  onBuscar?: (texto: string) => void;
-  categoria: string;
-  onCategoria: (categoria: string) => void;
-  mostrarCategoria?: boolean;
-  placeholder?: string;
-  children?: ReactNode;
-}): JSX.Element {
-  return (
-    <div className="barra-filtros">
-      <label className="buscador">
-        <span>⌕</span>
-        <input
-          onChange={(evento) => onBuscar?.(evento.target.value)}
-          placeholder={placeholder}
-        />
-      </label>
-      {mostrarCategoria && (
-        <label>
-          Categoría
-          <select
-            value={categoria}
-            onChange={(evento) => onCategoria(evento.target.value)}
-          >
-            <option value="">Todas las categorías</option>
-            {categorias.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
-      {children}
-    </div>
-  );
-}
-
-function BuscadorLista({
-  opciones,
-  valor,
-  onCambiar,
-  placeholder,
-}: {
-  opciones: Array<{ valor: string; etiqueta: string }>;
-  valor: string;
-  onCambiar: (valor: string) => void;
-  placeholder: string;
-}): JSX.Element {
-  const [abierto, setAbierto] = useState(false);
-  const [texto, setTexto] = useState("");
-  const referencia = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const cerrarAlHacerClickFuera = (evento: MouseEvent): void => {
-      if (
-        referencia.current &&
-        !referencia.current.contains(evento.target as Node)
-      ) {
-        setAbierto(false);
-      }
-    };
-    document.addEventListener("mousedown", cerrarAlHacerClickFuera);
-    return () =>
-      document.removeEventListener("mousedown", cerrarAlHacerClickFuera);
-  }, []);
-  const seleccionada = opciones.find((opcion) => opcion.valor === valor);
-  const coincidencias = opciones
-    .filter((opcion) =>
-      opcion.etiqueta.toLowerCase().includes(texto.toLowerCase()),
-    )
-    .slice(0, 20);
-  return (
-    <div className="buscador-lista" ref={referencia}>
-      <input
-        value={abierto ? texto : (seleccionada?.etiqueta ?? "")}
-        placeholder={placeholder}
-        onFocus={() => {
-          setAbierto(true);
-          setTexto("");
-        }}
-        onChange={(evento) => {
-          setTexto(evento.target.value);
-          setAbierto(true);
-        }}
-      />
-      {abierto && (
-        <div className="buscador-lista__resultados">
-          {coincidencias.map((opcion) => (
-            <button
-              type="button"
-              key={opcion.valor}
-              onMouseDown={(evento) => evento.preventDefault()}
-              onClick={() => {
-                onCambiar(opcion.valor);
-                setTexto("");
-                setAbierto(false);
-              }}
-            >
-              {opcion.etiqueta}
-            </button>
-          ))}
-          {coincidencias.length === 0 && (
-            <span>No se encontraron resultados.</span>
-          )}
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -2374,13 +2210,5 @@ function ClientesPlaceholder(): JSX.Element {
         <EstadoVacio texto="No hay un listado conectado todavía." />
       </div>
     </section>
-  );
-}
-
-function EstadoVacio({ texto }: { texto: string }): JSX.Element {
-  return (
-    <div className="vacio">
-      <strong>{texto}</strong>
-    </div>
   );
 }
