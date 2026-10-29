@@ -17,7 +17,7 @@ function formatearCondicionPago(condicion: string): string {
   switch (condicion) {
     case "contado":
     case "Contado":
-      return "Contado (todo de una)";
+      return "Contado";
     case "cuenta_corriente_7":
     case "Cuenta corriente · 7 días":
       return "Cuenta corriente · 7 días";
@@ -602,7 +602,7 @@ export function PedidosPagina({
                       )
                     }
                   >
-                    <option value="contado">Contado (todo de una)</option>
+                    <option value="contado">Contado</option>
                     <option value="cuenta_corriente_7">
                       Cuenta corriente · 7 días
                     </option>
