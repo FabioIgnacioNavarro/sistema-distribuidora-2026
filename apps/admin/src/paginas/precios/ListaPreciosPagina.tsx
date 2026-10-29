@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { ProductoInventario } from "@distribuidora/tipos-compartidos";
 import { EstadoVacio, Filtros, Paginador } from "../../components";
 import { REGISTROS_POR_PAGINA, porcentaje } from "../../comun/formato";
+import "./ListaPreciosPagina.css";
 
 interface FormatoMarkupRealProps {
   min: number | null;

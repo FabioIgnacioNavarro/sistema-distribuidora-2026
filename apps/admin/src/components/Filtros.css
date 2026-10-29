@@ -1,0 +1,113 @@
+.barra-filtros {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.buscador {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  padding: 0 13px;
+  border: 1px solid #dce6dd;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.buscador span {
+  color: #829188;
+  font-size: 21px;
+}
+
+.buscador input {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  color: inherit;
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+
+.barra-filtros select,
+.boton-filtro {
+  min-width: 170px;
+  padding: 0 14px;
+  color: #56665c;
+  border: 1px solid #dce6dd;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.barra-filtros input[type="date"] {
+  min-height: 42px;
+  padding: 0 10px;
+  color: #56665c;
+  border: 1px solid #dce6dd;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.boton-filtro {
+  min-width: auto;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.barra-filtros > label:not(.buscador) {
+  display: grid;
+  gap: 7px;
+  color: #65736a;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.barra-filtros > label:not(.buscador) select,
+.barra-filtros > label:not(.buscador) input[type="date"] {
+  min-height: 42px;
+}
+
+.app--oscura .buscador,
+.app--oscura select,
+.app--oscura .boton-filtro {
+  background: var(--superficie);
+  border-color: var(--borde);
+  color: inherit;
+}
+
+.app--oscura .barra-filtros input[type="date"] {
+  color: inherit;
+  border-color: var(--borde);
+  background: var(--superficie);
+}
+
+.app--oscura .barra-filtros input[type="search"],
+.app--oscura .barra-filtros input::placeholder {
+  color: #9caf9f;
+}
+
+.app--oscura select,
+.app--oscura .barra-filtros input[type="date"] {
+  color-scheme: dark;
+}
+
+.app--oscura .barra-filtros > label:not(.buscador) {
+  color: var(--secundario);
+}
+
+.app--oscura .barra-filtros select,
+.app--oscura .barra-filtros input[type="date"],
+.app--oscura .barra-filtros .buscador {
+  color: #e5eee7;
+  border-color: var(--borde);
+  background-color: var(--superficie-2);
+  color-scheme: dark;
+}
+
+.app--oscura select option {
+  color: #e5eee7;
+  background-color: var(--superficie);
+}

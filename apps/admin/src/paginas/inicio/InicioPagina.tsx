@@ -5,6 +5,7 @@ import type {
 } from "@distribuidora/tipos-compartidos";
 import { dinero, fechaHoy } from "../../comun/formato";
 import type { Vista } from "../../comun/tipos";
+import "./InicioPagina.css";
 
 interface InicioPaginaProps {
   navegar: (vista: Vista) => void;

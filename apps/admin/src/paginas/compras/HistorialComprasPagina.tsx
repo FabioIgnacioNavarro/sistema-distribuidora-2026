@@ -12,6 +12,7 @@ import {
   idFacturaVisible,
 } from "../../comun/formato";
 import type { Vista } from "../../comun/tipos";
+import "./compras.css";
 
 interface HistorialComprasPaginaProps {
   compras: CompraHistorial[];

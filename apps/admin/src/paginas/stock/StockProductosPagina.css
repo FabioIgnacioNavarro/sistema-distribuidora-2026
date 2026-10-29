@@ -1,0 +1,134 @@
+.producto-celda {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.producto-celda strong,
+.producto-celda small,
+.stock-celda strong,
+.lote-nombre strong,
+.lote-nombre small {
+  display: block;
+}
+
+.producto-celda small {
+  margin-top: 4px;
+}
+
+.producto-celda small,
+.lote-nombre small {
+  color: var(--secundario, #75827a);
+  font-size: 12px;
+}
+
+.expansor {
+  width: 23px;
+  height: 23px;
+  color: #176b43;
+  border: 1px solid #cfe0d2;
+  border-radius: 6px;
+  background: #f1f8f2;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.app--oscura .expansor {
+  background: #263d2c;
+  border-color: #42624b;
+  color: #a7d7b0;
+}
+
+.etiqueta-categoria {
+  padding: 5px 8px;
+  color: #597166;
+  border-radius: 6px;
+  background: #edf3ee;
+  font-size: 11px;
+}
+
+.app--oscura .etiqueta-categoria {
+  color: #bad5c0;
+  background: #29412f;
+}
+
+.stock-celda {
+  min-width: 135px;
+}
+
+.barra-stock {
+  height: 5px;
+  margin-top: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e8eee9;
+}
+
+.barra-stock i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #47a05d;
+}
+
+.barra-stock--lote i {
+  background: #6a9d73;
+}
+
+.estado {
+  display: inline-block;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.estado--activo,
+.estado--lote {
+  color: #24743a;
+  background: #e3f3e6;
+}
+
+.estado--agotado {
+  color: #a13e3e;
+  background: #f9e4e4;
+}
+
+.fila-producto--abierta td {
+  background: #f8fbf8;
+}
+
+.app--oscura .fila-producto--abierta td {
+  background: #203126;
+}
+
+.fila-lote td {
+  color: #718077;
+  background: #fbfdfb;
+  font-size: 12px;
+}
+
+.app--oscura .fila-lote td {
+  background: #1c2a20;
+}
+
+.lote-nombre {
+  display: block;
+  padding-left: 32px;
+}
+
+.progreso-stock-producto {
+  min-width: 185px;
+  gap: 8px;
+}
+
+.texto-progreso-stock {
+  min-width: 32px;
+  color: #718077;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.app--oscura .texto-progreso-stock {
+  color: #bdcbbf;
+}

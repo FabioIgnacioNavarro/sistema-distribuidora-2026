@@ -1,0 +1,135 @@
+.seccion-doble {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 20px;
+}
+
+.panel__encabezado {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.actividad {
+  margin-top: 22px;
+}
+
+.actividad > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px 0;
+  border-top: 1px solid #edf1ed;
+}
+
+.app--oscura .actividad > div {
+  border-color: #2e4235;
+}
+
+.actividad__punto {
+  width: 9px;
+  height: 9px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: #9ca9a0;
+}
+
+.actividad__punto--verde {
+  background: #42a35d;
+}
+
+.actividad p {
+  flex: 1;
+  margin: 0;
+}
+
+.actividad p strong,
+.actividad p small {
+  display: block;
+}
+
+.actividad p strong {
+  color: inherit;
+  font-size: 13px;
+}
+
+.actividad time {
+  color: #97a49b;
+  font-size: 11px;
+}
+
+.panel--verde {
+  color: #fff;
+  background: #1d593b;
+  border-color: #1d593b;
+}
+
+.panel--verde p {
+  color: #c4dfc9;
+}
+
+.panel--verde .eyebrow {
+  color: #a9d8b1;
+}
+
+.panel--vacio {
+  max-width: 650px;
+  text-align: center;
+}
+
+.panel__icono {
+  display: block;
+  margin-bottom: 14px;
+  color: #176b43;
+  font-size: 42px;
+}
+
+.acciones-rapidas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 20px;
+}
+
+/* Modal de reinicio */
+.modal-reinicio {
+  width: min(100%, 560px);
+}
+
+.modal-reinicio > p:not(.eyebrow) {
+  color: #68766d;
+  line-height: 1.55;
+}
+
+.app--oscura .modal-reinicio > p:not(.eyebrow) {
+  color: #bdcbbf;
+}
+
+.modal-reinicio form {
+  display: grid;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.modal-reinicio form > label {
+  font-size: 13px;
+}
+
+.modal-reinicio form > input {
+  min-height: 44px;
+  padding: 10px 12px;
+  color: inherit;
+  border: 1px solid #dce6dd;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.app--oscura .modal-reinicio form > input {
+  border-color: var(--borde);
+  background: var(--superficie-2);
+}
+
+.modal-reinicio .formulario-acciones {
+  justify-content: flex-end;
+}

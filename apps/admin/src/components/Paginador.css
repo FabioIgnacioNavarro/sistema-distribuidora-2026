@@ -1,0 +1,14 @@
+.paginador {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 18px 0 4px;
+  color: #718077;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.paginador .boton {
+  padding: 8px 12px;
+}

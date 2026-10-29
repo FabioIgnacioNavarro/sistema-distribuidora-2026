@@ -1,0 +1,11 @@
+.modal-producto {
+  width: min(100%, 720px);
+}
+
+.modal-producto .campos-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.modal-producto .formulario-acciones {
+  grid-column: 1 / -1;
+}

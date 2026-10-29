@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import type { CrearProductoEntrada } from "@distribuidora/tipos-compartidos";
+import "./ModalNuevoProducto.css";
 
 interface ModalNuevoProductoProps {
   guardando: boolean;

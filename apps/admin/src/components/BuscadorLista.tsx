@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import "./BuscadorLista.css";
 
 export interface OpcionBuscador {
   valor: string;
