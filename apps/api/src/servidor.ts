@@ -2,12 +2,16 @@ import Fastify from "fastify";
 import { rutasProductos } from "./rutas/productos.ruta.js";
 import { rutasCompras } from "./rutas/compras.ruta.js";
 import { rutasReinicio } from "./rutas/reinicio.ruta.js";
+import { rutasClientes } from "./rutas/clientes.ruta.js";
+import { rutasPedidos } from "./rutas/pedidos.ruta.js";
 
 const servidor = Fastify({ logger: true });
 
 servidor.register(rutasProductos);
 servidor.register(rutasCompras);
 servidor.register(rutasReinicio);
+servidor.register(rutasClientes);
+servidor.register(rutasPedidos);
 
 servidor.get("/api/salud", async () => ({
   estado: "ok",
