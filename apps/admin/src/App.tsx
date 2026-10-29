@@ -1,19 +1,27 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import type {
+  ClienteEntrada,
+  ClienteItem,
   CompraHistorial,
+  CrearPedidoEntrada,
   CrearProductoEntrada,
   LoteDetalle,
+  PedidoHistorialItem,
   ProductoInventario,
   RegistrarCompraEntrada,
 } from "@distribuidora/tipos-compartidos";
 import {
   actualizarProductoPrecios,
+  crearCliente,
   crearCompra,
+  crearPedido,
   crearProducto,
+  obtenerClientes,
   obtenerCompras,
   obtenerEstadoReinicio,
   obtenerLotes,
+  obtenerPedidos,
   obtenerProductos,
   reiniciarDatosOperativos,
 } from "./repositorios/api.repositorio";
@@ -21,12 +29,17 @@ import type { Vista } from "./comun/tipos";
 import { ModalNuevoProducto } from "./components/ModalNuevoProducto";
 import {
   ClientesPagina,
+  GastosPagina,
   HistorialComprasPagina,
   InicioPagina,
   ListaPreciosPagina,
+  LogisticaPagina,
   LotesPagina,
+  PedidosPagina,
   RegistrarCompraPagina,
   StockProductosPagina,
+  VendedoresPagina,
+  VentasResumenesPagina,
 } from "./paginas";
 
 export default function App(): JSX.Element {
@@ -35,8 +48,12 @@ export default function App(): JSX.Element {
   const [productos, setProductos] = useState<ProductoInventario[]>([]);
   const [lotes, setLotes] = useState<LoteDetalle[]>([]);
   const [compras, setCompras] = useState<CompraHistorial[]>([]);
+  const [clientes, setClientes] = useState<ClienteItem[]>([]);
+  const [pedidos, setPedidos] = useState<PedidoHistorialItem[]>([]);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
+  const [guardandoPedido, setGuardandoPedido] = useState(false);
+  const [guardandoCliente, setGuardandoCliente] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lotesAbiertos, setLotesAbiertos] = useState<Set<string>>(new Set());
   const [reinicioHabilitado, setReinicioHabilitado] = useState(false);
@@ -49,15 +66,24 @@ export default function App(): JSX.Element {
   const cargarDatos = useCallback(async (): Promise<void> => {
     setError(null);
     try {
-      const [productosRecibidos, lotesRecibidos, comprasRecibidas] =
-        await Promise.all([
-          obtenerProductos(),
-          obtenerLotes(),
-          obtenerCompras(),
-        ]);
+      const [
+        productosRecibidos,
+        lotesRecibidos,
+        comprasRecibidas,
+        clientesRecibidos,
+        pedidosRecibidos,
+      ] = await Promise.all([
+        obtenerProductos(),
+        obtenerLotes(),
+        obtenerCompras(),
+        obtenerClientes(),
+        obtenerPedidos(),
+      ]);
       setProductos(productosRecibidos);
       setLotes(lotesRecibidos);
       setCompras(comprasRecibidas);
+      setClientes(clientesRecibidos);
+      setPedidos(pedidosRecibidos);
     } catch (errorCarga) {
       setError(
         errorCarga instanceof Error
@@ -156,6 +182,45 @@ export default function App(): JSX.Element {
     }
   };
 
+  const guardarPedido = async (
+    entrada: CrearPedidoEntrada,
+  ): Promise<void> => {
+    setGuardandoPedido(true);
+    setError(null);
+    try {
+      await crearPedido(entrada);
+      await cargarDatos();
+      setVista("pedidos");
+    } catch (errorPedido) {
+      setError(
+        errorPedido instanceof Error
+          ? errorPedido.message
+          : "No se pudo registrar el pedido.",
+      );
+      throw errorPedido;
+    } finally {
+      setGuardandoPedido(false);
+    }
+  };
+
+  const guardarCliente = async (entrada: ClienteEntrada): Promise<void> => {
+    setGuardandoCliente(true);
+    setError(null);
+    try {
+      await crearCliente(entrada);
+      await cargarDatos();
+    } catch (errorCliente) {
+      setError(
+        errorCliente instanceof Error
+          ? errorCliente.message
+          : "No se pudo crear el cliente.",
+      );
+      throw errorCliente;
+    } finally {
+      setGuardandoCliente(false);
+    }
+  };
+
   const navegar = (nuevaVista: Vista): void => {
     setVista(nuevaVista);
     setError(null);
@@ -194,7 +259,36 @@ export default function App(): JSX.Element {
           >
             Panel de inicio
           </BotonMenu>
+
           <p className="menu__grupo">Operaciones</p>
+          <BotonMenu
+            activo={vista === "ventasResumenes"}
+            onClick={() => navegar("ventasResumenes")}
+            icono="↗"
+          >
+            Ventas y rentabilidad
+          </BotonMenu>
+          <BotonMenu
+            activo={vista === "pedidos"}
+            onClick={() => navegar("pedidos")}
+            icono="▣"
+          >
+            Pedidos
+          </BotonMenu>
+          <BotonMenu
+            activo={vista === "compras"}
+            onClick={() => navegar("compras")}
+            icono="＋"
+          >
+            Registrar compra
+          </BotonMenu>
+          <BotonMenu
+            activo={vista === "historialCompras"}
+            onClick={() => navegar("historialCompras")}
+            icono="▤"
+          >
+            Historial de compras
+          </BotonMenu>
           <BotonMenu
             activo={vista === "precios"}
             onClick={() => navegar("precios")}
@@ -217,20 +311,21 @@ export default function App(): JSX.Element {
             Lotes
           </BotonMenu>
           <BotonMenu
-            activo={vista === "compras"}
-            onClick={() => navegar("compras")}
-            icono="＋"
+            activo={vista === "gastos"}
+            onClick={() => navegar("gastos")}
+            icono="◉"
           >
-            Registrar compra
+            Registrar gastos
           </BotonMenu>
-          <BotonMenu
-            activo={vista === "historialCompras"}
-            onClick={() => navegar("historialCompras")}
-            icono="▤"
-          >
-            Historial de compras
-          </BotonMenu>
+
           <p className="menu__grupo">Personas</p>
+          <BotonMenu
+            activo={vista === "vendedores"}
+            onClick={() => navegar("vendedores")}
+            icono="♙"
+          >
+            Vendedores
+          </BotonMenu>
           <BotonMenu
             activo={vista === "clientes"}
             onClick={() => navegar("clientes")}
@@ -238,18 +333,21 @@ export default function App(): JSX.Element {
           >
             Clientes
           </BotonMenu>
-          <p className="menu__grupo">Ventas y logística</p>
-          <button className="menu__item menu__item--proximamente" disabled>
-            <span>↗</span>Ventas y rentabilidad<em>Próximo</em>
-          </button>
-          <button className="menu__item menu__item--proximamente" disabled>
-            <span>⇢</span>Logística<em>Próximo</em>
-          </button>
+
+          <p className="menu__grupo">Logística</p>
+          <BotonMenu
+            activo={vista === "logistica"}
+            onClick={() => navegar("logistica")}
+            icono="⇢"
+          >
+            Logística y rutas
+          </BotonMenu>
         </nav>
         <div className="barra-lateral__pie">
           <small>Gestión Fontana</small>
         </div>
       </aside>
+
       <main className="contenido-principal">
         <header className="cabecera">
           <div>
@@ -266,12 +364,14 @@ export default function App(): JSX.Element {
             </button>
           </div>
         </header>
+
         {error && (
           <div className="aviso-error" role="alert">
             <span>{error}</span>
             <button onClick={() => void cargarDatos()}>Reintentar</button>
           </div>
         )}
+
         {cargando ? (
           <section className="pagina">
             <div className="vacio">
@@ -288,6 +388,17 @@ export default function App(): JSX.Element {
                 compras={compras}
                 reinicioHabilitado={reinicioHabilitado}
                 onAbrirReinicio={() => setModalReinicio(true)}
+              />
+            )}
+            {vista === "ventasResumenes" && <VentasResumenesPagina />}
+            {vista === "pedidos" && (
+              <PedidosPagina
+                pedidos={pedidos}
+                productos={productos}
+                clientes={clientes}
+                guardando={guardandoPedido}
+                onCrearPedido={guardarPedido}
+                navegar={navegar}
               />
             )}
             {vista === "precios" && (
@@ -330,10 +441,21 @@ export default function App(): JSX.Element {
                 navegar={navegar}
               />
             )}
-            {vista === "clientes" && <ClientesPagina />}
+            {vista === "gastos" && <GastosPagina />}
+            {vista === "vendedores" && <VendedoresPagina />}
+            {vista === "clientes" && (
+              <ClientesPagina
+                clientes={clientes}
+                pedidos={pedidos}
+                guardando={guardandoCliente}
+                onCrearCliente={guardarCliente}
+              />
+            )}
+            {vista === "logistica" && <LogisticaPagina />}
           </>
         )}
       </main>
+
       {modalReinicio && (
         <div
           className="modal-fondo"
@@ -399,6 +521,7 @@ export default function App(): JSX.Element {
           </section>
         </div>
       )}
+
       {modalProducto && (
         <ModalNuevoProducto
           guardando={creandoProducto}
@@ -435,11 +558,16 @@ function BotonMenu({
 function nombreVista(vista: Vista): string {
   return {
     inicio: "Panel de inicio",
+    ventasResumenes: "Ventas y rentabilidad",
+    pedidos: "Pedidos",
     precios: "Lista de precios",
     productos: "Stock de productos",
     lotes: "Lotes",
     compras: "Registrar compra",
     historialCompras: "Historial de compras",
+    gastos: "Registrar gastos",
+    vendedores: "Vendedores",
     clientes: "Clientes",
+    logistica: "Logística y rutas",
   }[vista];
 }

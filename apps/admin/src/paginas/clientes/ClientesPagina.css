@@ -1,0 +1,65 @@
+.detalle-cliente-tarjeta {
+  margin-top: 24px;
+}
+
+.datos-cliente-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #f3f7f3;
+  margin-top: 18px;
+  margin-bottom: 20px;
+}
+
+.datos-cliente-grid p {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+}
+
+.datos-cliente-grid p span {
+  color: #849188;
+  font-size: 11px;
+}
+
+.datos-cliente-grid p strong {
+  font-size: 13px;
+}
+
+.app--oscura .datos-cliente-grid {
+  background: var(--superficie-2);
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.badge-verde {
+  color: #176b43;
+  background: #e2f0e5;
+}
+
+.badge-amarillo {
+  color: #a06e14;
+  background: #fef3c7;
+}
+
+.badge-rojo {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+.badge-gris {
+  color: #526056;
+  background: #e7ede8;
+}
+
+.modal-cliente {
+  width: min(100%, 640px);
+}

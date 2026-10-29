@@ -1,8 +1,13 @@
 export type Vista =
   | "inicio"
+  | "ventasResumenes"
+  | "pedidos"
+  | "compras"
+  | "historialCompras"
   | "precios"
   | "productos"
   | "lotes"
-  | "compras"
-  | "historialCompras"
-  | "clientes";
+  | "gastos"
+  | "vendedores"
+  | "clientes"
+  | "logistica";

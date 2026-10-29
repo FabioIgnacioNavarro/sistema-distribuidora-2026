@@ -11,10 +11,20 @@ import {
   confirmacionReinicioSchema,
   estadoReinicioSchema,
   respuestaReinicioSchema,
+  clienteItemSchema,
+  clienteSchema,
+  crearClienteRespuestaSchema,
+  pedidoHistorialItemSchema,
+  crearPedidoSchema,
+  crearPedidoRespuestaSchema,
   type CompraHistorial,
   type LoteDetalle,
   type ProductoInventario,
   type RegistrarCompraEntrada,
+  type ClienteItem,
+  type PedidoHistorialItem,
+  type CrearClienteRespuesta,
+  type CrearPedidoRespuesta,
 } from "@distribuidora/tipos-compartidos";
 
 const urlApi = import.meta.env.VITE_API_URL ?? "";
@@ -115,3 +125,40 @@ export async function reiniciarDatosOperativos(
     }),
   );
 }
+
+export async function obtenerClientes(): Promise<ClienteItem[]> {
+  return clienteItemSchema
+    .array()
+    .parse(await consultarApi("/api/clientes"));
+}
+
+export async function crearCliente(
+  entradaSinValidar: unknown,
+): Promise<CrearClienteRespuesta> {
+  const entrada = clienteSchema.parse(entradaSinValidar);
+  return crearClienteRespuestaSchema.parse(
+    await consultarApi("/api/clientes", {
+      method: "POST",
+      body: JSON.stringify(entrada),
+    }),
+  );
+}
+
+export async function obtenerPedidos(): Promise<PedidoHistorialItem[]> {
+  return pedidoHistorialItemSchema
+    .array()
+    .parse(await consultarApi("/api/pedidos"));
+}
+
+export async function crearPedido(
+  entradaSinValidar: unknown,
+): Promise<CrearPedidoRespuesta> {
+  const entrada = crearPedidoSchema.parse(entradaSinValidar);
+  return crearPedidoRespuestaSchema.parse(
+    await consultarApi("/api/pedidos", {
+      method: "POST",
+      body: JSON.stringify(entrada),
+    }),
+  );
+}
+
