@@ -56,7 +56,15 @@ export function PedidosPagina({
   navegar,
 }: PedidosPaginaProps): JSX.Element {
   const [busqueda, setBusqueda] = useState("");
+  const [fechaDesde, setFechaDesde] = useState("");
+  const [fechaHasta, setFechaHasta] = useState("");
+  const [vendedorFiltro, setVendedorFiltro] = useState("todos");
+  const [clienteFiltro, setClienteFiltro] = useState("todos");
   const [filtroCobro, setFiltroCobro] = useState<string>("todos");
+  const [filtroEntrega, setFiltroEntrega] = useState<string>("todos");
+  const [ordenFecha, setOrdenFecha] = useState<"recientes" | "antiguos">(
+    "recientes",
+  );
   const [pagina, setPagina] = useState(1);
   const [pedidoSeleccionadoId, setPedidoSeleccionadoId] = useState<string | null>(
     null,
@@ -89,6 +97,28 @@ export function PedidosPagina({
     [clientes],
   );
 
+  const opcionesClientesFiltro = useMemo(
+    () => [...clientes].sort((a, b) => a.nombre.localeCompare(b.nombre)),
+    [clientes],
+  );
+
+  const opcionesVendedores = useMemo(() => {
+    const nombres = new Set<string>();
+    let tieneDueno = false;
+    for (const p of pedidos) {
+      if (p.vendidoPorDueno) {
+        tieneDueno = true;
+      } else if (p.vendedorNombre) {
+        nombres.add(p.vendedorNombre);
+      }
+    }
+    const lista = Array.from(nombres).sort();
+    if (tieneDueno) {
+      lista.unshift("Dueño");
+    }
+    return lista;
+  }, [pedidos]);
+
   // Filtros
   const pedidosFiltrados = useMemo(() => {
     let lista = pedidos;
@@ -102,11 +132,94 @@ export function PedidosPagina({
           (p.numeroPedido && String(p.numeroPedido).includes(texto)),
       );
     }
+    if (fechaDesde) {
+      lista = lista.filter((p) => p.fechaEmision >= fechaDesde);
+    }
+    if (fechaHasta) {
+      lista = lista.filter((p) => p.fechaEmision <= fechaHasta);
+    }
+    if (vendedorFiltro !== "todos") {
+      lista = lista.filter((p) => {
+        if (vendedorFiltro === "Dueño") return p.vendidoPorDueno;
+        return p.vendedorNombre === vendedorFiltro;
+      });
+    }
+    if (clienteFiltro !== "todos") {
+      lista = lista.filter((p) => p.clienteId === clienteFiltro);
+    }
     if (filtroCobro !== "todos") {
       lista = lista.filter((p) => p.estadoCobro === filtroCobro);
     }
-    return lista;
-  }, [pedidos, busqueda, filtroCobro]);
+    if (filtroEntrega !== "todos") {
+      lista = lista.filter((p) => p.estado === filtroEntrega);
+    }
+    return [...lista].sort((a, b) => {
+      const fechaA = new Date(a.fechaEmision).getTime();
+      const fechaB = new Date(b.fechaEmision).getTime();
+      const diff = fechaB - fechaA;
+      if (diff !== 0) {
+        return ordenFecha === "recientes" ? diff : -diff;
+      }
+      const numA = a.numeroPedido ?? 0;
+      const numB = b.numeroPedido ?? 0;
+      return ordenFecha === "recientes" ? numB - numA : numA - numB;
+    });
+  }, [
+    pedidos,
+    busqueda,
+    fechaDesde,
+    fechaHasta,
+    vendedorFiltro,
+    clienteFiltro,
+    filtroCobro,
+    filtroEntrega,
+    ordenFecha,
+  ]);
+
+  const exportarCsv = (): void => {
+    const cabeceras = [
+      "IdPedido",
+      "Fecha",
+      "Cliente",
+      "Dirección",
+      "Vendedor",
+      "Condición de pago",
+      "Total",
+      "Cobrado",
+      "Saldo pendiente",
+      "Estado de cobro",
+      "Estado entrega",
+    ];
+
+    const filas = pedidosFiltrados.map((p) => [
+      p.numeroPedido ? `#PED-${String(p.numeroPedido).padStart(4, "0")}` : p.id,
+      p.fechaEmision,
+      `"${p.clienteNombre.replace(/"/g, '""')}"`,
+      `"${(p.clienteDireccion ?? "").replace(/"/g, '""')}"`,
+      p.vendidoPorDueno ? "Dueño" : (p.vendedorNombre ?? "—"),
+      formatearCondicionPago(p.condicionPago),
+      p.importeTotal,
+      p.importeCobrado,
+      p.saldoPendiente,
+      p.estadoCobro,
+      p.estado,
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [cabeceras.join(","), ...filas.map((f) => f.join(","))].join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `historial_pedidos_${new Date().toISOString().slice(0, 10)}.csv`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const total = pedidosFiltrados.length;
   const pedidosPaginados = useMemo(() => {
@@ -258,44 +371,140 @@ export function PedidosPagina({
             Control de pedidos comerciales, estado de cobranzas y seguimiento de entregas.
           </p>
         </div>
-        <button
-          type="button"
-          className="boton boton--primario"
-          onClick={() => setModalAbierto(true)}
-        >
-          ＋ Registrar pedido
-        </button>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <button
+            type="button"
+            className="boton boton--secundario"
+            onClick={exportarCsv}
+          >
+            ↓ Exportar vista
+          </button>
+          <button
+            type="button"
+            className="boton boton--primario"
+            onClick={() => setModalAbierto(true)}
+          >
+            ＋ Registrar pedido
+          </button>
+        </div>
       </div>
 
-      <div className="barra-filtros">
-        <label className="buscador">
-          <span>🔍</span>
-          <input
-            type="search"
-            value={busqueda}
-            onChange={(e) => {
-              setBusqueda(e.target.value);
-              setPagina(1);
-            }}
-            placeholder="Buscar por cliente, dirección o N° pedido…"
-          />
-        </label>
-        <label>
-          <span>Estado de cobro</span>
-          <select
-            value={filtroCobro}
-            onChange={(e) => {
-              setFiltroCobro(e.target.value);
-              setPagina(1);
-            }}
-          >
-            <option value="todos">Todos los estados</option>
-            <option value="sin_cobrar">Sin cobrar</option>
-            <option value="cobrado_parcialmente">Cobrado parcialmente</option>
-            <option value="cobrado_totalmente">Cobrado totalmente</option>
-          </select>
-        </label>
-      </div>
+      <section className="panel-filtros">
+        <div className="panel-filtros__grid">
+          <label>
+            <span>Buscar</span>
+            <input
+              type="search"
+              value={busqueda}
+              onChange={(e) => {
+                setBusqueda(e.target.value);
+                setPagina(1);
+              }}
+              placeholder="Cliente, dirección o N° pedido…"
+            />
+          </label>
+          <label>
+            <span>Desde</span>
+            <input
+              type="date"
+              value={fechaDesde}
+              onChange={(e) => {
+                setFechaDesde(e.target.value);
+                setPagina(1);
+              }}
+            />
+          </label>
+          <label>
+            <span>Hasta</span>
+            <input
+              type="date"
+              value={fechaHasta}
+              onChange={(e) => {
+                setFechaHasta(e.target.value);
+                setPagina(1);
+              }}
+            />
+          </label>
+          <label>
+            <span>Vendedor</span>
+            <select
+              value={vendedorFiltro}
+              onChange={(e) => {
+                setVendedorFiltro(e.target.value);
+                setPagina(1);
+              }}
+            >
+              <option value="todos">Todos los vendedores</option>
+              {opcionesVendedores.map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Cliente</span>
+            <select
+              value={clienteFiltro}
+              onChange={(e) => {
+                setClienteFiltro(e.target.value);
+                setPagina(1);
+              }}
+            >
+              <option value="todos">Todos los clientes</option>
+              {opcionesClientesFiltro.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Estado de cobro</span>
+            <select
+              value={filtroCobro}
+              onChange={(e) => {
+                setFiltroCobro(e.target.value);
+                setPagina(1);
+              }}
+            >
+              <option value="todos">Todos los estados</option>
+              <option value="sin_cobrar">Sin cobrar</option>
+              <option value="cobrado_parcialmente">Cobrado parcialmente</option>
+              <option value="cobrado_totalmente">Cobrado totalmente</option>
+            </select>
+          </label>
+          <label>
+            <span>Estado entrega</span>
+            <select
+              value={filtroEntrega}
+              onChange={(e) => {
+                setFiltroEntrega(e.target.value);
+                setPagina(1);
+              }}
+            >
+              <option value="todos">Todos los estados</option>
+              <option value="pendiente_preparar">Pendiente a preparar</option>
+              <option value="preparado">Preparado / En reparto</option>
+              <option value="entregado">Entregado</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+          </label>
+          <label>
+            <span>Ordenar</span>
+            <select
+              value={ordenFecha}
+              onChange={(e) => {
+                setOrdenFecha(e.target.value as "recientes" | "antiguos");
+                setPagina(1);
+              }}
+            >
+              <option value="recientes">Más recientes</option>
+              <option value="antiguos">Más antiguos</option>
+            </select>
+          </label>
+        </div>
+      </section>
 
       <div className="tabla-contenedor">
         {total === 0 ? (
@@ -307,6 +516,7 @@ export function PedidosPagina({
                 <th>IdPedido</th>
                 <th>Fecha</th>
                 <th>Cliente / Dirección</th>
+                <th>Vendedor</th>
                 <th>Condición pago</th>
                 <th>Vencimiento</th>
                 <th style={{ textAlign: "right" }}>Importe total</th>
@@ -335,6 +545,13 @@ export function PedidosPagina({
                       <small className="celda-secundaria">
                         {p.clienteDireccion}
                       </small>
+                    )}
+                  </td>
+                  <td>
+                    {p.vendidoPorDueno ? (
+                      <span className="badge badge-verde">Dueño</span>
+                    ) : (
+                      <span>{p.vendedorNombre ?? "—"}</span>
                     )}
                   </td>
                   <td>{formatearCondicionPago(p.condicionPago)}</td>

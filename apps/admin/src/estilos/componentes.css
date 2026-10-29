@@ -365,6 +365,86 @@ tbody tr:last-child td {
   background: var(--superficie-2);
 }
 
+/* Panel de filtros (acorde al prototipo web) */
+.panel-filtros {
+  margin-bottom: 22px;
+  padding: 18px 22px;
+  border: 1px solid #e2e9e2;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(23, 107, 67, 0.04);
+}
+
+.panel-filtros__grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  align-items: end;
+}
+
+.panel-filtros label {
+  display: grid;
+  gap: 6px;
+  color: #65736a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.panel-filtros input,
+.panel-filtros select {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 12px;
+  color: inherit;
+  border: 1px solid #dce6dd;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+}
+
+.panel-filtros input:focus,
+.panel-filtros select:focus {
+  outline: 2px solid #a7d3b5;
+  border-color: #176b43;
+}
+
+.panel-filtros .buscador {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid #dce6dd;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.panel-filtros .buscador input {
+  border: 0;
+  outline: 0;
+  padding: 0;
+  min-height: 42px;
+}
+
+.app--oscura .panel-filtros {
+  background: var(--superficie);
+  border-color: var(--borde);
+  box-shadow: none;
+}
+
+.app--oscura .panel-filtros label {
+  color: var(--secundario);
+}
+
+.app--oscura .panel-filtros input,
+.app--oscura .panel-filtros select,
+.app--oscura .panel-filtros .buscador {
+  color: #e5eee7;
+  border-color: var(--borde);
+  background-color: var(--superficie-2);
+  color-scheme: dark;
+}
+
 @media (max-width: 1100px) {
   .tarjetas {
     grid-template-columns: repeat(2, 1fr);

@@ -79,6 +79,7 @@ export async function listarClientes(): Promise<ClienteItem[]> {
       cantidadPedidos: metricas.cantidadPedidos,
       saldoPendiente: metricas.saldoPendiente,
       totalComprado: metricas.totalComprado,
+      creadoEn: (cliente as { creado_en?: string | null }).creado_en ?? null,
     };
   });
 }

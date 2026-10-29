@@ -23,9 +23,13 @@ export function ClientesPagina({
   onCrearCliente,
 }: ClientesPaginaProps): JSX.Element {
   const [busqueda, setBusqueda] = useState("");
-  const [orden, setOrden] = useState<"pedidos_desc" | "pedidos_asc" | "nombre">(
-    "nombre",
+  const [ordenPedidos, setOrdenPedidos] = useState<"todos" | "desc" | "asc">(
+    "todos",
   );
+  const [ordenAntiguedad, setOrdenAntiguedad] = useState<
+    "todos" | "recientes" | "antiguos"
+  >("todos");
+  const [filtroTipo, setFiltroTipo] = useState<string>("todos");
   const [pagina, setPagina] = useState(1);
   const [clienteSeleccionadoId, setClienteSeleccionadoId] = useState<
     string | null
@@ -52,12 +56,25 @@ export function ClientesPagina({
           (c.direccion && c.direccion.toLowerCase().includes(texto)),
       );
     }
+    if (filtroTipo !== "todos") {
+      lista = lista.filter((c) => c.tipoCliente === filtroTipo);
+    }
     return [...lista].sort((a, b) => {
-      if (orden === "pedidos_desc") return b.cantidadPedidos - a.cantidadPedidos;
-      if (orden === "pedidos_asc") return a.cantidadPedidos - b.cantidadPedidos;
+      if (ordenPedidos === "desc") return b.cantidadPedidos - a.cantidadPedidos;
+      if (ordenPedidos === "asc") return a.cantidadPedidos - b.cantidadPedidos;
+      if (ordenAntiguedad === "recientes") {
+        const fechaA = a.creadoEn ? new Date(a.creadoEn).getTime() : 0;
+        const fechaB = b.creadoEn ? new Date(b.creadoEn).getTime() : 0;
+        return fechaB - fechaA;
+      }
+      if (ordenAntiguedad === "antiguos") {
+        const fechaA = a.creadoEn ? new Date(a.creadoEn).getTime() : 0;
+        const fechaB = b.creadoEn ? new Date(b.creadoEn).getTime() : 0;
+        return fechaA - fechaB;
+      }
       return a.nombre.localeCompare(b.nombre);
     });
-  }, [clientes, busqueda, orden]);
+  }, [clientes, busqueda, ordenPedidos, ordenAntiguedad, filtroTipo]);
 
   const total = clientesFiltrados.length;
   const clientesPaginados = useMemo(() => {
@@ -111,35 +128,66 @@ export function ClientesPagina({
         </button>
       </div>
 
-      <div className="barra-filtros">
-        <label className="buscador">
-          <span>🔍</span>
-          <input
-            type="search"
-            value={busqueda}
-            onChange={(e) => {
-              setBusqueda(e.target.value);
-              setPagina(1);
-            }}
-            placeholder="Buscar por nombre, código o dirección…"
-          />
-        </label>
-        <label>
-          <span>Ordenar</span>
-          <select
-            value={orden}
-            onChange={(e) =>
-              setOrden(
-                e.target.value as "pedidos_desc" | "pedidos_asc" | "nombre",
-              )
-            }
-          >
-            <option value="nombre">Por nombre (A-Z)</option>
-            <option value="pedidos_desc">Más pedidos</option>
-            <option value="pedidos_asc">Menos pedidos</option>
-          </select>
-        </label>
-      </div>
+      <section className="panel-filtros">
+        <div className="panel-filtros__grid">
+          <label>
+            <span>Buscar nombre / razón social</span>
+            <input
+              type="search"
+              value={busqueda}
+              onChange={(e) => {
+                setBusqueda(e.target.value);
+                setPagina(1);
+              }}
+              placeholder="Ej. Almacén Don José"
+            />
+          </label>
+          <label>
+            <span>Cantidad de pedidos</span>
+            <select
+              value={ordenPedidos}
+              onChange={(e) => {
+                setOrdenPedidos(e.target.value as "todos" | "desc" | "asc");
+                setPagina(1);
+              }}
+            >
+              <option value="todos">Sin ordenar</option>
+              <option value="desc">Mayor a menor</option>
+              <option value="asc">Menor a mayor</option>
+            </select>
+          </label>
+          <label>
+            <span>Antigüedad</span>
+            <select
+              value={ordenAntiguedad}
+              onChange={(e) => {
+                setOrdenAntiguedad(
+                  e.target.value as "todos" | "recientes" | "antiguos",
+                );
+                setPagina(1);
+              }}
+            >
+              <option value="todos">Sin ordenar</option>
+              <option value="recientes">Más recientes</option>
+              <option value="antiguos">Más antiguos</option>
+            </select>
+          </label>
+          <label>
+            <span>Tipo de cliente</span>
+            <select
+              value={filtroTipo}
+              onChange={(e) => {
+                setFiltroTipo(e.target.value);
+                setPagina(1);
+              }}
+            >
+              <option value="todos">Todos los tipos</option>
+              <option value="minorista">Minorista</option>
+              <option value="mayorista">Mayorista</option>
+            </select>
+          </label>
+        </div>
+      </section>
 
       <div className="tabla-contenedor">
         {total === 0 ? (

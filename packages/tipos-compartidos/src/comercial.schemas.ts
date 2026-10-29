@@ -77,6 +77,7 @@ export const clienteItemSchema = z.object({
   cantidadPedidos: z.number().int().nonnegative(),
   saldoPendiente: z.number(),
   totalComprado: z.number(),
+  creadoEn: z.string().nullable().optional(),
 });
 
 export const lineaPedidoDetalleSchema = z.object({
