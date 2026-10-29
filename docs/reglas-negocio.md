@@ -124,6 +124,7 @@
 10. Un pedido puede tener múltiples cobranzas y conserva el historial completo de esos movimientos
 11. Los productos pueden crearse manualmente desde la Lista de precios o automáticamente al cargar una factura de compra. En el alta automática, el SKU debe ser único y el producto comienza con `precioVenta = costoUnitario` y `markup = 0`; la primera existencia se registra como lote de esa factura.
 12. Un producto creado manualmente comienza sin stock y queda disponible para la app del vendedor a través del catálogo compartido. El precio y el markup se ajustan posteriormente desde la Lista de precios.
+13. El SKU se genera en la base de datos y no se escribe manualmente. Las categorías permitidas son Almacén (`ALI`), Snack (`SNK`) y Bebida (`BEB`). Las bebidas requieren Vino (`V`), Cerveza (`C`) o Gaseosa/agua saborizada (`G`): `ALI-001`, `SNK-001`, `BEB-V001`, `BEB-C001` y `BEB-G001`. Cada prefijo tiene su propio contador. Los SKU históricos se conservan con el prefijo `LEG-`.
 
 ---
 

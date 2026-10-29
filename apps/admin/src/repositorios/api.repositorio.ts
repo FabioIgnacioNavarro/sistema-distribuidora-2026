@@ -2,6 +2,8 @@ import {
   compraHistorialSchema,
   crearProductoRespuestaSchema,
   crearProductoSchema,
+  actualizarProductoPreciosRespuestaSchema,
+  actualizarProductoPreciosSchema,
   loteDetalleSchema,
   productoInventarioSchema,
   registrarCompraRespuestaSchema,
@@ -78,6 +80,21 @@ export async function crearProducto(
     }),
   );
   return respuesta.id;
+}
+
+export async function actualizarProductoPrecios(
+  entradaSinValidar: unknown,
+): Promise<void> {
+  const entrada = actualizarProductoPreciosSchema.parse(entradaSinValidar);
+  actualizarProductoPreciosRespuestaSchema.parse(
+    await consultarApi(`/api/productos/${entrada.id}/precios`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        precioVenta: entrada.precioVenta,
+        markupPct: entrada.markupPct,
+      }),
+    }),
+  );
 }
 
 export async function obtenerEstadoReinicio(): Promise<boolean> {

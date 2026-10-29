@@ -1,4 +1,11 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { FormEvent, ReactNode } from "react";
 import type {
   CompraHistorial,
@@ -10,6 +17,7 @@ import type {
 import {
   crearCompra,
   crearProducto,
+  actualizarProductoPrecios,
   obtenerCompras,
   obtenerLotes,
   obtenerProductos,
@@ -27,7 +35,11 @@ type Vista =
   | "clientes";
 interface LineaCompraFormulario {
   productoId: string | null;
-  nuevoProducto: { sku: string; nombre: string; categoria: string } | null;
+  nuevoProducto: {
+    nombre: string;
+    categoriaCodigo: "ALI" | "SNK" | "BEB";
+    subcategoriaCodigo: "V" | "C" | "G" | null;
+  } | null;
   cantidad: number;
   costoUnitario: number;
   fechaVencimiento: string;
@@ -47,6 +59,45 @@ const fechaHoy = (): string => {
   const hoy = new Date();
   return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`;
 };
+
+const idFacturaVisible = (numero: number): string =>
+  `F-${String(numero).padStart(4, "0")}`;
+
+const REGISTROS_POR_PAGINA = 20;
+
+function Paginador({
+  total,
+  pagina,
+  onCambiar,
+}: {
+  total: number;
+  pagina: number;
+  onCambiar: (pagina: number) => void;
+}): JSX.Element | null {
+  const paginas = Math.max(1, Math.ceil(total / REGISTROS_POR_PAGINA));
+  if (total <= REGISTROS_POR_PAGINA) return null;
+  return (
+    <div className="paginador" aria-label="Paginación">
+      <button
+        className="boton boton--secundario"
+        disabled={pagina === 1}
+        onClick={() => onCambiar(pagina - 1)}
+      >
+        ← Anterior
+      </button>
+      <span>
+        Página {pagina} de {paginas}
+      </span>
+      <button
+        className="boton boton--secundario"
+        disabled={pagina === paginas}
+        onClick={() => onCambiar(pagina + 1)}
+      >
+        Siguiente →
+      </button>
+    </div>
+  );
+}
 
 export default function App(): JSX.Element {
   const [vista, setVista] = useState<Vista>("inicio");
@@ -154,6 +205,24 @@ export default function App(): JSX.Element {
       );
     } finally {
       setCreandoProducto(false);
+    }
+  };
+
+  const guardarPrecios = async (
+    id: string,
+    precioVenta: number,
+    markupPct: number,
+  ): Promise<void> => {
+    setError(null);
+    try {
+      await actualizarProductoPrecios({ id, precioVenta, markupPct });
+      await cargarDatos();
+    } catch (errorPrecios) {
+      setError(
+        errorPrecios instanceof Error
+          ? errorPrecios.message
+          : "No se pudieron actualizar los precios.",
+      );
     }
   };
 
@@ -295,6 +364,7 @@ export default function App(): JSX.Element {
                 productos={productos}
                 categorias={categorias}
                 onNuevoProducto={() => setModalProducto(true)}
+                onActualizarPrecios={guardarPrecios}
               />
             )}
             {vista === "productos" && (
@@ -316,6 +386,7 @@ export default function App(): JSX.Element {
             {vista === "compras" && (
               <RegistrarCompra
                 productos={productos}
+                compras={compras}
                 guardando={guardando}
                 onGuardar={guardarFactura}
               />
@@ -568,12 +639,16 @@ function Filtros({
   onBuscar,
   categoria,
   onCategoria,
+  mostrarCategoria = true,
+  placeholder = "Buscar por SKU o nombre...",
   children,
 }: {
   categorias: string[];
   onBuscar?: (texto: string) => void;
   categoria: string;
   onCategoria: (categoria: string) => void;
+  mostrarCategoria?: boolean;
+  placeholder?: string;
   children?: ReactNode;
 }): JSX.Element {
   return (
@@ -582,21 +657,98 @@ function Filtros({
         <span>⌕</span>
         <input
           onChange={(evento) => onBuscar?.(evento.target.value)}
-          placeholder="Buscar por SKU o nombre..."
+          placeholder={placeholder}
         />
       </label>
-      <select
-        value={categoria}
-        onChange={(evento) => onCategoria(evento.target.value)}
-      >
-        <option value="">Todas las categorías</option>
-        {categorias.map((item) => (
-          <option key={item} value={item}>
-            {item}
-          </option>
-        ))}
-      </select>
+      {mostrarCategoria && (
+        <label>
+          Categoría
+          <select
+            value={categoria}
+            onChange={(evento) => onCategoria(evento.target.value)}
+          >
+            <option value="">Todas las categorías</option>
+            {categorias.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       {children}
+    </div>
+  );
+}
+
+function BuscadorLista({
+  opciones,
+  valor,
+  onCambiar,
+  placeholder,
+}: {
+  opciones: Array<{ valor: string; etiqueta: string }>;
+  valor: string;
+  onCambiar: (valor: string) => void;
+  placeholder: string;
+}): JSX.Element {
+  const [abierto, setAbierto] = useState(false);
+  const [texto, setTexto] = useState("");
+  const referencia = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const cerrarAlHacerClickFuera = (evento: MouseEvent): void => {
+      if (
+        referencia.current &&
+        !referencia.current.contains(evento.target as Node)
+      ) {
+        setAbierto(false);
+      }
+    };
+    document.addEventListener("mousedown", cerrarAlHacerClickFuera);
+    return () =>
+      document.removeEventListener("mousedown", cerrarAlHacerClickFuera);
+  }, []);
+  const seleccionada = opciones.find((opcion) => opcion.valor === valor);
+  const coincidencias = opciones
+    .filter((opcion) =>
+      opcion.etiqueta.toLowerCase().includes(texto.toLowerCase()),
+    )
+    .slice(0, 20);
+  return (
+    <div className="buscador-lista" ref={referencia}>
+      <input
+        value={abierto ? texto : (seleccionada?.etiqueta ?? "")}
+        placeholder={placeholder}
+        onFocus={() => {
+          setAbierto(true);
+          setTexto("");
+        }}
+        onChange={(evento) => {
+          setTexto(evento.target.value);
+          setAbierto(true);
+        }}
+      />
+      {abierto && (
+        <div className="buscador-lista__resultados">
+          {coincidencias.map((opcion) => (
+            <button
+              type="button"
+              key={opcion.valor}
+              onMouseDown={(evento) => evento.preventDefault()}
+              onClick={() => {
+                onCambiar(opcion.valor);
+                setTexto("");
+                setAbierto(false);
+              }}
+            >
+              {opcion.etiqueta}
+            </button>
+          ))}
+          {coincidencias.length === 0 && (
+            <span>No se encontraron resultados.</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -618,6 +770,7 @@ function TablaProductos({
   const [categoria, setCategoria] = useState("");
   const [ordenPrecio, setOrdenPrecio] = useState("ninguno");
   const [ordenStock, setOrdenStock] = useState("ninguno");
+  const [pagina, setPagina] = useState(1);
   const lista = productos
     .filter(
       (producto) =>
@@ -671,24 +824,28 @@ function TablaProductos({
         categoria={categoria}
         onCategoria={setCategoria}
       >
-        <select
-          aria-label="Ordenar por precio de venta"
-          value={ordenPrecio}
-          onChange={(evento) => setOrdenPrecio(evento.target.value)}
-        >
-          <option value="ninguno">Precio venta · sin ordenar</option>
-          <option value="asc">Precio · menor a mayor</option>
-          <option value="desc">Precio · mayor a menor</option>
-        </select>
-        <select
-          aria-label="Ordenar por cantidad en stock"
-          value={ordenStock}
-          onChange={(evento) => setOrdenStock(evento.target.value)}
-        >
-          <option value="ninguno">Stock · sin ordenar</option>
-          <option value="desc">Stock · mayor a menor</option>
-          <option value="asc">Stock · menor a mayor</option>
-        </select>
+        <label>
+          Ordenar precio
+          <select
+            value={ordenPrecio}
+            onChange={(evento) => setOrdenPrecio(evento.target.value)}
+          >
+            <option value="ninguno">Sin ordenar</option>
+            <option value="asc">Menor a mayor</option>
+            <option value="desc">Mayor a menor</option>
+          </select>
+        </label>
+        <label>
+          Ordenar stock
+          <select
+            value={ordenStock}
+            onChange={(evento) => setOrdenStock(evento.target.value)}
+          >
+            <option value="ninguno">Sin ordenar</option>
+            <option value="desc">Mayor a menor</option>
+            <option value="asc">Menor a mayor</option>
+          </select>
+        </label>
       </Filtros>
       <div className="tabla-contenedor">
         <table>
@@ -702,105 +859,111 @@ function TablaProductos({
             </tr>
           </thead>
           <tbody>
-            {lista.map((producto) => {
-              const propios = lotesPorProducto.get(producto.id) ?? [];
-              const abierto = lotesAbiertos.has(producto.id);
-              return (
-                <Fragment key={producto.id}>
-                  <tr
-                    className={
-                      abierto
-                        ? "fila-producto fila-producto--abierta"
-                        : "fila-producto"
-                    }
-                  >
-                    <td>
-                      <button
-                        className="expansor"
-                        aria-expanded={abierto}
-                        onClick={() => alternar(producto.id)}
-                      >
-                        {abierto ? "⌄" : "›"}
-                      </button>{" "}
-                      <strong>{producto.sku}</strong>
-                    </td>
-                    <td>{producto.nombre}</td>
-                    <td>
-                      <span className="etiqueta-categoria">
-                        {producto.categoria}
-                      </span>
-                    </td>
-                    <td>
-                      <strong>{producto.stockTotal} u.</strong>
-                    </td>
-                    <td>{dinero(producto.precioVenta)}</td>
-                  </tr>
-                  {abierto &&
-                    (propios.length > 0 ? (
-                      propios.map((lote) => (
-                        <tr className="fila-lote" key={lote.id}>
-                          <td>↳ {lote.codigoLote}</td>
-                          <td colSpan={2}>
-                            Cantidad disponible · compra{" "}
-                            {fechaVisible(lote.recibidoEn)}
-                          </td>
-                          <td>
-                            {(() => {
-                              const porcentajeRestante =
-                                lote.cantidadOriginal > 0
-                                  ? (lote.cantidadRestante /
-                                      lote.cantidadOriginal) *
-                                    100
-                                  : 0;
-                              const colorBarra =
-                                porcentajeRestante > 70
-                                  ? "barra-progreso-verde"
-                                  : porcentajeRestante > 30
-                                    ? "barra-progreso-ambar"
-                                    : "barra-progreso-rojo";
-                              return (
-                                <div className="progreso-lote-en-linea progreso-stock-producto">
-                                  <strong>{lote.cantidadRestante} u.</strong>
-                                  <div
-                                    className="barra-progreso-lote"
-                                    role="progressbar"
-                                    aria-label={`${lote.cantidadRestante} de ${lote.cantidadOriginal} unidades restantes`}
-                                    aria-valuemin={0}
-                                    aria-valuemax={lote.cantidadOriginal}
-                                    aria-valuenow={lote.cantidadRestante}
-                                  >
-                                    <span
-                                      className={`barra-progreso-lote-relleno ${colorBarra}`}
-                                      style={{
-                                        width: `${porcentajeRestante}%`,
-                                      }}
-                                    />
+            {lista
+              .slice(
+                (pagina - 1) * REGISTROS_POR_PAGINA,
+                pagina * REGISTROS_POR_PAGINA,
+              )
+              .map((producto) => {
+                const propios = lotesPorProducto.get(producto.id) ?? [];
+                const abierto = lotesAbiertos.has(producto.id);
+                return (
+                  <Fragment key={producto.id}>
+                    <tr
+                      className={
+                        abierto
+                          ? "fila-producto fila-producto--abierta"
+                          : "fila-producto"
+                      }
+                    >
+                      <td>
+                        <button
+                          className="expansor"
+                          aria-expanded={abierto}
+                          onClick={() => alternar(producto.id)}
+                        >
+                          {abierto ? "⌄" : "›"}
+                        </button>{" "}
+                        <strong>{producto.sku}</strong>
+                      </td>
+                      <td>{producto.nombre}</td>
+                      <td>
+                        <span className="etiqueta-categoria">
+                          {producto.categoria}
+                        </span>
+                      </td>
+                      <td>
+                        <strong>{producto.stockTotal} u.</strong>
+                      </td>
+                      <td>{dinero(producto.precioVenta)}</td>
+                    </tr>
+                    {abierto &&
+                      (propios.length > 0 ? (
+                        propios.map((lote) => (
+                          <tr className="fila-lote" key={lote.id}>
+                            <td>↳ {lote.codigoLote}</td>
+                            <td colSpan={2}>
+                              Cantidad disponible · compra{" "}
+                              {fechaVisible(lote.recibidoEn)}
+                            </td>
+                            <td>
+                              {(() => {
+                                const porcentajeRestante =
+                                  lote.cantidadOriginal > 0
+                                    ? (lote.cantidadRestante /
+                                        lote.cantidadOriginal) *
+                                      100
+                                    : 0;
+                                const colorBarra =
+                                  porcentajeRestante > 70
+                                    ? "barra-progreso-verde"
+                                    : porcentajeRestante > 30
+                                      ? "barra-progreso-ambar"
+                                      : "barra-progreso-rojo";
+                                return (
+                                  <div className="progreso-lote-en-linea progreso-stock-producto">
+                                    <strong>{lote.cantidadRestante} u.</strong>
+                                    <div
+                                      className="barra-progreso-lote"
+                                      role="progressbar"
+                                      aria-label={`${lote.cantidadRestante} de ${lote.cantidadOriginal} unidades restantes`}
+                                      aria-valuemin={0}
+                                      aria-valuemax={lote.cantidadOriginal}
+                                      aria-valuenow={lote.cantidadRestante}
+                                    >
+                                      <span
+                                        className={`barra-progreso-lote-relleno ${colorBarra}`}
+                                        style={{
+                                          width: `${porcentajeRestante}%`,
+                                        }}
+                                      />
+                                    </div>
+                                    <span className="texto-progreso-stock">
+                                      {Math.round(porcentajeRestante)}%
+                                    </span>
                                   </div>
-                                  <span className="texto-progreso-stock">
-                                    {Math.round(porcentajeRestante)}%
-                                  </span>
-                                </div>
-                              );
-                            })()}
+                                );
+                              })()}
+                            </td>
+                            <td>—</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr
+                          className="fila-lote"
+                          key={`${producto.id}-sin-lotes`}
+                        >
+                          <td colSpan={5}>
+                            Este producto todavía no tiene lotes registrados.
                           </td>
-                          <td>—</td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr
-                        className="fila-lote"
-                        key={`${producto.id}-sin-lotes`}
-                      >
-                        <td colSpan={5}>
-                          Este producto todavía no tiene lotes registrados.
-                        </td>
-                      </tr>
-                    ))}
-                </Fragment>
-              );
-            })}
+                      ))}
+                  </Fragment>
+                );
+              })}
           </tbody>
         </table>
+        <Paginador total={lista.length} pagina={pagina} onCambiar={setPagina} />
         {lista.length === 0 && (
           <EstadoVacio texto="No hay productos para mostrar." />
         )}
@@ -819,12 +982,14 @@ function TablaLotes({
   navegar: (vista: Vista) => void;
 }): JSX.Element {
   const [proveedor, setProveedor] = useState("");
+  const [busqueda, setBusqueda] = useState("");
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
   const [ordenFecha, setOrdenFecha] = useState<"recientes" | "antiguas">(
     "recientes",
   );
   const [mostrarAgotados, setMostrarAgotados] = useState(false);
+  const [pagina, setPagina] = useState(1);
   const [abiertos, setAbiertos] = useState<Set<string>>(new Set());
   const productosPorId = new Map(
     productos.map((producto) => [producto.id, producto]),
@@ -860,6 +1025,21 @@ function TablaLotes({
     ),
   ).sort();
   const gruposFiltrados = grupos
+    .filter((grupo) => {
+      const texto = [
+        grupo.codigo,
+        grupo.numeroFactura,
+        grupo.proveedor,
+        ...grupo.lineas.flatMap((linea) => [
+          linea.productoSku,
+          linea.productoNombre,
+        ]),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return !busqueda.trim() || texto.includes(busqueda.trim().toLowerCase());
+    })
     .filter((grupo) => mostrarAgotados || grupo.cantidadRestante > 0)
     .filter((grupo) => !proveedor || grupo.proveedor === proveedor)
     .filter(
@@ -896,20 +1076,28 @@ function TablaLotes({
           ＋ Registrar compra
         </button>
       </div>
-      <section className="panel filtros-lotes">
+      <Filtros
+        categorias={[]}
+        categoria=""
+        onCategoria={() => undefined}
+        onBuscar={setBusqueda}
+        mostrarCategoria={false}
+        placeholder="Buscar lote, factura, proveedor o producto..."
+      >
         <label>
           Proveedor
-          <select
-            value={proveedor}
-            onChange={(evento) => setProveedor(evento.target.value)}
-          >
-            <option value="">Todos</option>
-            {proveedores.map((nombre) => (
-              <option key={nombre} value={nombre}>
-                {nombre}
-              </option>
-            ))}
-          </select>
+          <BuscadorLista
+            opciones={[
+              { valor: "", etiqueta: "Todos los proveedores" },
+              ...proveedores.map((nombre) => ({
+                valor: nombre,
+                etiqueta: nombre,
+              })),
+            ]}
+            valor={proveedor}
+            onCambiar={setProveedor}
+            placeholder="Buscar proveedor..."
+          />
         </label>
         <label>
           Fecha desde
@@ -947,7 +1135,7 @@ function TablaLotes({
           />{" "}
           Mostrar lotes vacíos / agotados
         </label>
-      </section>
+      </Filtros>
       <div className="tabla-contenedor">
         <table>
           <thead>
@@ -961,111 +1149,125 @@ function TablaLotes({
             </tr>
           </thead>
           <tbody>
-            {gruposFiltrados.map((grupo) => {
-              const abierto = abiertos.has(grupo.clave);
-              const activo = grupo.cantidadRestante > 0;
-              return (
-                <Fragment key={grupo.clave}>
-                  <tr
-                    className={
-                      abierto
-                        ? "fila-producto fila-producto--abierta"
-                        : "fila-producto"
-                    }
-                  >
-                    <td>
-                      <button
-                        className="expansor"
-                        aria-expanded={abierto}
-                        onClick={() => alternar(grupo.clave)}
-                      >
-                        {abierto ? "⌄" : "›"}
-                      </button>{" "}
-                      #{grupo.lineas[0]?.id.slice(0, 8).toUpperCase()}
-                    </td>
-                    <td>{grupo.codigo}</td>
-                    <td>{grupo.numeroFactura ?? "—"}</td>
-                    <td>{grupo.proveedor ?? "Proveedor sin nombre"}</td>
-                    <td>
-                      {grupo.recibidoEn ? fechaVisible(grupo.recibidoEn) : "—"}
-                    </td>
-                    <td>
-                      <span
-                        className={
-                          activo
-                            ? "estado estado--activo"
-                            : "estado estado--agotado"
-                        }
-                      >
-                        {activo ? "Activo" : "Agotado"}
-                      </span>
-                    </td>
-                  </tr>
-                  {abierto &&
-                    grupo.lineas.map((lote) => {
-                      const producto = productosPorId.get(lote.productoId);
-                      const porcentajeRestante =
-                        lote.cantidadOriginal > 0
-                          ? (lote.cantidadRestante / lote.cantidadOriginal) *
-                            100
-                          : 0;
-                      const colorBarra =
-                        porcentajeRestante > 70
-                          ? "barra-progreso-verde"
-                          : porcentajeRestante > 30
-                            ? "barra-progreso-ambar"
-                            : "barra-progreso-rojo";
-                      return (
-                        <tr className="fila-lote" key={lote.id}>
-                          <td>↳ {lote.productoSku}</td>
-                          <td>
-                            <strong>{lote.productoNombre}</strong>
-                          </td>
-                          <td>—</td>
-                          <td>{producto?.categoria ?? "Sin categoría"}</td>
-                          <td>
-                            <div className="progreso-lote-en-linea">
-                              <div
-                                className="barra-progreso-lote"
-                                role="progressbar"
-                                aria-label={`${lote.cantidadRestante} de ${lote.cantidadOriginal} unidades restantes`}
-                                aria-valuemin={0}
-                                aria-valuemax={lote.cantidadOriginal}
-                                aria-valuenow={lote.cantidadRestante}
-                              >
-                                <span
-                                  className={`barra-progreso-lote-relleno ${colorBarra}`}
-                                  style={{ width: `${porcentajeRestante}%` }}
-                                />
-                              </div>
-                              <strong>
-                                {lote.cantidadRestante} /{" "}
-                                {lote.cantidadOriginal} restantes
-                              </strong>
-                            </div>
-                          </td>
-                          <td>
-                            {dinero(lote.costoUnitario)} · subtotal{" "}
-                            {dinero(lote.cantidadOriginal * lote.costoUnitario)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  {abierto && (
-                    <tr className="fila-total" key={`${grupo.clave}-total`}>
-                      <td colSpan={5} className="texto-total-lote">
-                        Costo total del lote
+            {gruposFiltrados
+              .slice(
+                (pagina - 1) * REGISTROS_POR_PAGINA,
+                pagina * REGISTROS_POR_PAGINA,
+              )
+              .map((grupo) => {
+                const abierto = abiertos.has(grupo.clave);
+                const activo = grupo.cantidadRestante > 0;
+                return (
+                  <Fragment key={grupo.clave}>
+                    <tr
+                      className={
+                        abierto
+                          ? "fila-producto fila-producto--abierta"
+                          : "fila-producto"
+                      }
+                    >
+                      <td>
+                        <button
+                          className="expansor"
+                          aria-expanded={abierto}
+                          onClick={() => alternar(grupo.clave)}
+                        >
+                          {abierto ? "⌄" : "›"}
+                        </button>{" "}
+                        #{grupo.lineas[0]?.id.slice(0, 8).toUpperCase()}
+                      </td>
+                      <td>{grupo.codigo}</td>
+                      <td>{grupo.numeroFactura ?? "—"}</td>
+                      <td>{grupo.proveedor ?? "Proveedor sin nombre"}</td>
+                      <td>
+                        {grupo.recibidoEn
+                          ? fechaVisible(grupo.recibidoEn)
+                          : "—"}
                       </td>
                       <td>
-                        <strong>{dinero(grupo.costoTotal)}</strong>
+                        <span
+                          className={
+                            activo
+                              ? "estado estado--activo"
+                              : "estado estado--agotado"
+                          }
+                        >
+                          {activo ? "Activo" : "Agotado"}
+                        </span>
                       </td>
                     </tr>
-                  )}
-                </Fragment>
-              );
-            })}
+                    {abierto &&
+                      grupo.lineas.map((lote) => {
+                        const producto = productosPorId.get(lote.productoId);
+                        const porcentajeRestante =
+                          lote.cantidadOriginal > 0
+                            ? (lote.cantidadRestante / lote.cantidadOriginal) *
+                              100
+                            : 0;
+                        const colorBarra =
+                          porcentajeRestante > 70
+                            ? "barra-progreso-verde"
+                            : porcentajeRestante > 30
+                              ? "barra-progreso-ambar"
+                              : "barra-progreso-rojo";
+                        return (
+                          <tr className="fila-lote" key={lote.id}>
+                            <td>↳ {lote.productoSku}</td>
+                            <td>
+                              <strong>{lote.productoNombre}</strong>
+                            </td>
+                            <td>—</td>
+                            <td>{producto?.categoria ?? "Sin categoría"}</td>
+                            <td>
+                              <div className="progreso-lote-en-linea">
+                                <div
+                                  className="barra-progreso-lote"
+                                  role="progressbar"
+                                  aria-label={`${lote.cantidadRestante} de ${lote.cantidadOriginal} unidades restantes`}
+                                  aria-valuemin={0}
+                                  aria-valuemax={lote.cantidadOriginal}
+                                  aria-valuenow={lote.cantidadRestante}
+                                >
+                                  <span
+                                    className={`barra-progreso-lote-relleno ${colorBarra}`}
+                                    style={{ width: `${porcentajeRestante}%` }}
+                                  />
+                                </div>
+                                <strong>
+                                  {lote.cantidadRestante} /{" "}
+                                  {lote.cantidadOriginal} restantes
+                                </strong>
+                              </div>
+                            </td>
+                            <td>
+                              {dinero(lote.costoUnitario)} · subtotal{" "}
+                              {dinero(
+                                lote.cantidadOriginal * lote.costoUnitario,
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    {abierto && (
+                      <tr className="fila-total" key={`${grupo.clave}-total`}>
+                        <td colSpan={5} className="texto-total-lote">
+                          Costo total del lote
+                        </td>
+                        <td>
+                          <strong>{dinero(grupo.costoTotal)}</strong>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
           </tbody>
         </table>
+        <Paginador
+          total={gruposFiltrados.length}
+          pagina={pagina}
+          onCambiar={setPagina}
+        />
         {gruposFiltrados.length === 0 && (
           <EstadoVacio texto="No hay lotes que coincidan con los filtros." />
         )}
@@ -1074,19 +1276,55 @@ function TablaLotes({
   );
 }
 
+function FormatoMarkupReal({
+  min,
+  max,
+  cantidadLotes,
+}: {
+  min: number | null;
+  max: number | null;
+  cantidadLotes: number;
+}): JSX.Element {
+  if (min === null) return <span>—</span>;
+  if (cantidadLotes === 1 || min === max) {
+    const clase = min <= 0 ? "markup-negativo" : "markup-positivo";
+    return <span className={clase}>{porcentaje(min)}</span>;
+  }
+  const maxVal = max ?? min;
+  const claseMin = min <= 0 ? "markup-negativo" : "markup-positivo";
+  const claseMax = maxVal <= 0 ? "markup-negativo" : "markup-positivo";
+  return (
+    <span>
+      <span className={claseMin}>{porcentaje(min)}</span>
+      {" — "}
+      <span className={claseMax}>{porcentaje(maxVal)}</span>
+    </span>
+  );
+}
+
 function ListaPrecios({
   productos,
   categorias,
   onNuevoProducto,
+  onActualizarPrecios,
 }: {
   productos: ProductoInventario[];
   categorias: string[];
   onNuevoProducto: () => void;
+  onActualizarPrecios: (
+    id: string,
+    precioVenta: number,
+    markupPct: number,
+  ) => Promise<void>;
 }): JSX.Element {
   const [busqueda, setBusqueda] = useState("");
   const [categoria, setCategoria] = useState("");
   const [ordenMarkup, setOrdenMarkup] = useState("ninguno");
   const [ordenStock, setOrdenStock] = useState("ninguno");
+  const [pagina, setPagina] = useState(1);
+  const [ediciones, setEdiciones] = useState<
+    Record<string, { precioVenta: number; markupPct: number }>
+  >({});
   const lista = productos
     .filter(
       (producto) =>
@@ -1131,24 +1369,28 @@ function ListaPrecios({
         categoria={categoria}
         onCategoria={setCategoria}
       >
-        <select
-          aria-label="Ordenar por markup"
-          value={ordenMarkup}
-          onChange={(evento) => setOrdenMarkup(evento.target.value)}
-        >
-          <option value="ninguno">Markup · sin ordenar</option>
-          <option value="desc">Markup · mayor a menor</option>
-          <option value="asc">Markup · menor a mayor</option>
-        </select>
-        <select
-          aria-label="Ordenar por stock"
-          value={ordenStock}
-          onChange={(evento) => setOrdenStock(evento.target.value)}
-        >
-          <option value="ninguno">Stock · sin ordenar</option>
-          <option value="desc">Stock · mayor a menor</option>
-          <option value="asc">Stock · menor a mayor</option>
-        </select>
+        <label>
+          Ordenar markup
+          <select
+            value={ordenMarkup}
+            onChange={(evento) => setOrdenMarkup(evento.target.value)}
+          >
+            <option value="ninguno">Sin ordenar</option>
+            <option value="desc">Mayor a menor</option>
+            <option value="asc">Menor a mayor</option>
+          </select>
+        </label>
+        <label>
+          Ordenar stock
+          <select
+            value={ordenStock}
+            onChange={(evento) => setOrdenStock(evento.target.value)}
+          >
+            <option value="ninguno">Sin ordenar</option>
+            <option value="desc">Mayor a menor</option>
+            <option value="asc">Menor a mayor</option>
+          </select>
+        </label>
       </Filtros>
       <div className="tabla-contenedor">
         <table>
@@ -1159,26 +1401,102 @@ function ListaPrecios({
               <th>Categoría</th>
               <th>Stock</th>
               <th>Precio público</th>
-              <th>Markup</th>
+              <th>Markup deseado</th>
+              <th>Markup real por lotes</th>
             </tr>
           </thead>
           <tbody>
-            {lista.map((producto) => (
-              <tr key={producto.id}>
-                <td>{producto.sku}</td>
-                <td>
-                  <strong>{producto.nombre}</strong>
-                </td>
-                <td>{producto.categoria}</td>
-                <td>{producto.stockTotal}</td>
-                <td>
-                  <strong>{dinero(producto.precioVenta)}</strong>
-                </td>
-                <td>{porcentaje(producto.markupPct)}</td>
-              </tr>
-            ))}
+            {lista
+              .slice(
+                (pagina - 1) * REGISTROS_POR_PAGINA,
+                pagina * REGISTROS_POR_PAGINA,
+              )
+              .map((producto) => (
+                <tr key={producto.id}>
+                  {(() => {
+                    const edicion = ediciones[producto.id] ?? {
+                      precioVenta: producto.precioVenta,
+                      markupPct: producto.markupPct,
+                    };
+                    const cambiar = (cambio: Partial<typeof edicion>): void =>
+                      setEdiciones((actuales) => ({
+                        ...actuales,
+                        [producto.id]: { ...edicion, ...cambio },
+                      }));
+                    return (
+                      <>
+                        <td>{producto.sku}</td>
+                        <td>
+                          <strong>{producto.nombre}</strong>
+                        </td>
+                        <td>{producto.categoria}</td>
+                        <td>{producto.stockTotal}</td>
+                        <td>
+                          <div className="campo-tabla-envoltorio">
+                            <span className="campo-tabla-simbolo">$</span>
+                            <input
+                              className="campo-tabla-input"
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={edicion.precioVenta}
+                              onChange={(evento) =>
+                                cambiar({
+                                  precioVenta: Number(evento.target.value),
+                                })
+                              }
+                              onBlur={() =>
+                                void onActualizarPrecios(
+                                  producto.id,
+                                  edicion.precioVenta,
+                                  edicion.markupPct,
+                                )
+                              }
+                              aria-label={`Precio público de ${producto.nombre}`}
+                            />
+                          </div>
+                        </td>
+                        <td>
+                          <div className="campo-tabla-envoltorio">
+                            <input
+                              className="campo-tabla-input"
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.01"
+                              value={edicion.markupPct}
+                              onChange={(evento) =>
+                                cambiar({
+                                  markupPct: Number(evento.target.value),
+                                })
+                              }
+                              onBlur={() =>
+                                void onActualizarPrecios(
+                                  producto.id,
+                                  edicion.precioVenta,
+                                  edicion.markupPct,
+                                )
+                              }
+                              aria-label={`Markup deseado de ${producto.nombre}`}
+                            />
+                            <span className="campo-tabla-simbolo">%</span>
+                          </div>
+                        </td>
+                        <td>
+                          <FormatoMarkupReal
+                            min={producto.markupRealMin}
+                            max={producto.markupRealMax}
+                            cantidadLotes={producto.cantidadLotesActivos}
+                          />
+                        </td>
+                      </>
+                    );
+                  })()}
+                </tr>
+              ))}
           </tbody>
         </table>
+        <Paginador total={lista.length} pagina={pagina} onCambiar={setPagina} />
         {lista.length === 0 && (
           <EstadoVacio texto="No hay productos para mostrar." />
         )}
@@ -1189,10 +1507,12 @@ function ListaPrecios({
 
 function RegistrarCompra({
   productos,
+  compras,
   guardando,
   onGuardar,
 }: {
   productos: ProductoInventario[];
+  compras: CompraHistorial[];
   guardando: boolean;
   onGuardar: (entrada: RegistrarCompraEntrada) => Promise<void>;
 }): JSX.Element {
@@ -1209,6 +1529,7 @@ function RegistrarCompra({
       </div>
       <FacturaFormulario
         productos={productos.filter((producto) => producto.estaActivo)}
+        compras={compras}
         guardando={guardando}
         onGuardar={onGuardar}
       />
@@ -1225,14 +1546,24 @@ function ModalNuevoProducto({
   onCerrar: () => void;
   onGuardar: (entrada: CrearProductoEntrada) => Promise<void>;
 }): JSX.Element {
-  const [sku, setSku] = useState("");
   const [nombre, setNombre] = useState("");
-  const [categoria, setCategoria] = useState("");
+  const [categoriaCodigo, setCategoriaCodigo] = useState<"ALI" | "SNK" | "BEB">(
+    "ALI",
+  );
+  const [subcategoriaCodigo, setSubcategoriaCodigo] = useState<"V" | "C" | "G">(
+    "V",
+  );
   const [precioVenta, setPrecioVenta] = useState(0);
   const [markupPct, setMarkupPct] = useState(0);
   const enviar = (evento: FormEvent<HTMLFormElement>): void => {
     evento.preventDefault();
-    void onGuardar({ sku, nombre, categoria, precioVenta, markupPct });
+    void onGuardar({
+      nombre,
+      categoriaCodigo,
+      subcategoriaCodigo: categoriaCodigo === "BEB" ? subcategoriaCodigo : null,
+      precioVenta,
+      markupPct,
+    });
   };
   return (
     <div
@@ -1264,14 +1595,6 @@ function ModalNuevoProducto({
         </p>
         <form className="campos-grid" onSubmit={enviar}>
           <label>
-            SKU
-            <input
-              required
-              value={sku}
-              onChange={(evento) => setSku(evento.target.value)}
-            />
-          </label>
-          <label>
             Nombre
             <input
               required
@@ -1281,12 +1604,32 @@ function ModalNuevoProducto({
           </label>
           <label>
             Categoría
-            <input
-              required
-              value={categoria}
-              onChange={(evento) => setCategoria(evento.target.value)}
-            />
+            <select
+              value={categoriaCodigo}
+              onChange={(evento) =>
+                setCategoriaCodigo(evento.target.value as "ALI" | "SNK" | "BEB")
+              }
+            >
+              <option value="ALI">Almacén (ALI)</option>
+              <option value="SNK">Snack (SNK)</option>
+              <option value="BEB">Bebida (BEB)</option>
+            </select>
           </label>
+          {categoriaCodigo === "BEB" && (
+            <label>
+              Subcategoría
+              <select
+                value={subcategoriaCodigo}
+                onChange={(evento) =>
+                  setSubcategoriaCodigo(evento.target.value as "V" | "C" | "G")
+                }
+              >
+                <option value="V">Vino</option>
+                <option value="C">Cerveza</option>
+                <option value="G">Gaseosa / agua saborizada</option>
+              </select>
+            </label>
+          )}
           <label>
             Precio de venta ($)
             <input
@@ -1335,14 +1678,34 @@ function ModalNuevoProducto({
 
 function FacturaFormulario({
   productos,
+  compras,
   guardando,
   onGuardar,
 }: {
   productos: ProductoInventario[];
+  compras: CompraHistorial[];
   guardando: boolean;
   onGuardar: (entrada: RegistrarCompraEntrada) => Promise<void>;
 }): JSX.Element {
+  const proveedores = Array.from(
+    new Set(compras.map((compra) => compra.proveedor)),
+  ).sort();
   const [proveedor, setProveedor] = useState("");
+  const [proveedorNuevo, setProveedorNuevo] = useState("");
+  const [sucursal, setSucursal] = useState("");
+  const [sucursalNueva, setSucursalNueva] = useState("");
+  const sucursales = Array.from(
+    new Set(
+      compras
+        .filter(
+          (compra) =>
+            compra.proveedor ===
+            (proveedor === "__nuevo__" ? proveedorNuevo : proveedor),
+        )
+        .map((compra) => compra.sucursalProveedor)
+        .filter((valor): valor is string => Boolean(valor)),
+    ),
+  ).sort();
   const [numero, setNumero] = useState("");
   const [fecha, setFecha] = useState(fechaHoy());
   const [notas, setNotas] = useState("");
@@ -1350,7 +1713,9 @@ function FacturaFormulario({
     {
       productoId: productos[0]?.id ?? "",
       nuevoProducto:
-        productos.length === 0 ? { sku: "", nombre: "", categoria: "" } : null,
+        productos.length === 0
+          ? { nombre: "", categoriaCodigo: "ALI", subcategoriaCodigo: null }
+          : null,
       cantidad: 1,
       costoUnitario: 0,
       fechaVencimiento: "",
@@ -1384,7 +1749,8 @@ function FacturaFormulario({
     evento.preventDefault();
     void onGuardar({
       nroFactura: numero,
-      proveedor,
+      proveedor: proveedor === "__nuevo__" ? proveedorNuevo : proveedor,
+      sucursalProveedor: sucursal === "__nuevo__" ? sucursalNueva : sucursal,
       fechaCompra: fecha,
       notas: notas || null,
       lineas: lineas.map((linea) => ({
@@ -1397,16 +1763,14 @@ function FacturaFormulario({
     });
   };
   const valido = Boolean(
-    proveedor.trim() &&
+    (proveedor === "__nuevo__" ? proveedorNuevo.trim() : proveedor.trim()) &&
+    (sucursal === "__nuevo__" ? sucursalNueva.trim() : sucursal.trim()) &&
     numero.trim() &&
     fecha &&
     lineas.length > 0 &&
     lineas.every(
       (linea) =>
-        (linea.productoId ||
-          (linea.nuevoProducto?.sku.trim() &&
-            linea.nuevoProducto.nombre.trim() &&
-            linea.nuevoProducto.categoria.trim())) &&
+        (linea.productoId || linea.nuevoProducto?.nombre.trim()) &&
         linea.cantidad > 0 &&
         linea.costoUnitario >= 0,
     ),
@@ -1436,13 +1800,59 @@ function FacturaFormulario({
           </label>
           <label>
             Proveedor
-            <input
-              required
-              value={proveedor}
-              onChange={(evento) => setProveedor(evento.target.value)}
-              placeholder="Nombre del proveedor"
+            <BuscadorLista
+              opciones={[
+                ...proveedores.map((nombre) => ({
+                  valor: nombre,
+                  etiqueta: nombre,
+                })),
+                { valor: "__nuevo__", etiqueta: "＋ Crear proveedor nuevo" },
+              ]}
+              valor={proveedor}
+              onCambiar={(valor) => {
+                setProveedor(valor);
+                setSucursal("");
+              }}
+              placeholder="Buscar proveedor..."
             />
           </label>
+          {proveedor === "__nuevo__" && (
+            <label>
+              Nuevo proveedor
+              <input
+                required
+                value={proveedorNuevo}
+                onChange={(evento) => setProveedorNuevo(evento.target.value)}
+                placeholder="Nombre del proveedor"
+              />
+            </label>
+          )}
+          <label>
+            Sucursal
+            <BuscadorLista
+              opciones={[
+                ...sucursales.map((nombre) => ({
+                  valor: nombre,
+                  etiqueta: nombre,
+                })),
+                { valor: "__nuevo__", etiqueta: "＋ Crear sucursal nueva" },
+              ]}
+              valor={sucursal}
+              onCambiar={setSucursal}
+              placeholder="Buscar sucursal..."
+            />
+          </label>
+          {sucursal === "__nuevo__" && (
+            <label>
+              Nueva sucursal
+              <input
+                required
+                value={sucursalNueva}
+                onChange={(evento) => setSucursalNueva(evento.target.value)}
+                placeholder="Ej. Mayorista Av. Alvear"
+              />
+            </label>
+          )}
           <label>
             Notas
             <input
@@ -1485,58 +1895,41 @@ function FacturaFormulario({
             return (
               <div className="linea-factura" key={indice}>
                 <div className="producto-compra-control">
-                  <select
-                    required
-                    value={
+                  <BuscadorLista
+                    opciones={[
+                      {
+                        valor: "__nuevo__",
+                        etiqueta: "＋ Crear producto nuevo",
+                      },
+                      ...productos.map((producto) => ({
+                        valor: producto.id,
+                        etiqueta: `${producto.sku} · ${producto.nombre}`,
+                      })),
+                    ]}
+                    valor={
                       linea.nuevoProducto
                         ? "__nuevo__"
                         : (linea.productoId ?? "")
                     }
-                    onChange={(evento) =>
+                    onCambiar={(valor) =>
                       actualizarLinea(
                         indice,
-                        evento.target.value === "__nuevo__"
+                        valor === "__nuevo__"
                           ? {
                               productoId: null,
                               nuevoProducto: {
-                                sku: "",
                                 nombre: "",
-                                categoria: "",
+                                categoriaCodigo: "ALI",
+                                subcategoriaCodigo: null,
                               },
                             }
-                          : {
-                              productoId: evento.target.value,
-                              nuevoProducto: null,
-                            },
+                          : { productoId: valor, nuevoProducto: null },
                       )
                     }
-                  >
-                    <option value="" disabled>
-                      Seleccionar producto
-                    </option>
-                    {productos.map((producto) => (
-                      <option key={producto.id} value={producto.id}>
-                        {producto.sku} · {producto.nombre}
-                      </option>
-                    ))}
-                    <option value="__nuevo__">＋ Crear producto nuevo</option>
-                  </select>
+                    placeholder="Buscar producto..."
+                  />
                   {linea.nuevoProducto && (
                     <div className="producto-nuevo-campos">
-                      <input
-                        required
-                        aria-label="SKU del nuevo producto"
-                        placeholder="SKU"
-                        value={linea.nuevoProducto.sku}
-                        onChange={(evento) =>
-                          actualizarLinea(indice, {
-                            nuevoProducto: {
-                              ...linea.nuevoProducto!,
-                              sku: evento.target.value,
-                            },
-                          })
-                        }
-                      />
                       <input
                         required
                         aria-label="Nombre del nuevo producto"
@@ -1551,25 +1944,57 @@ function FacturaFormulario({
                           })
                         }
                       />
-                      <input
-                        required
-                        aria-label="Categoría del nuevo producto"
-                        placeholder="Categoría"
-                        value={linea.nuevoProducto.categoria}
+                      <select
+                        aria-label="Categoría"
+                        value={linea.nuevoProducto.categoriaCodigo}
                         onChange={(evento) =>
                           actualizarLinea(indice, {
                             nuevoProducto: {
                               ...linea.nuevoProducto!,
-                              categoria: evento.target.value,
+                              categoriaCodigo: evento.target.value as
+                                | "ALI"
+                                | "SNK"
+                                | "BEB",
+                              subcategoriaCodigo:
+                                evento.target.value === "BEB" ? "V" : null,
                             },
                           })
                         }
-                      />
+                      >
+                        <option value="ALI">Almacén</option>
+                        <option value="SNK">Snack</option>
+                        <option value="BEB">Bebida</option>
+                      </select>
+                      {linea.nuevoProducto.categoriaCodigo === "BEB" && (
+                        <select
+                          aria-label="Subcategoría de bebida"
+                          value={linea.nuevoProducto.subcategoriaCodigo ?? "V"}
+                          onChange={(evento) =>
+                            actualizarLinea(indice, {
+                              nuevoProducto: {
+                                ...linea.nuevoProducto!,
+                                subcategoriaCodigo: evento.target.value as
+                                  | "V"
+                                  | "C"
+                                  | "G",
+                              },
+                            })
+                          }
+                        >
+                          <option value="V">Vino</option>
+                          <option value="C">Cerveza</option>
+                          <option value="G">Gaseosa / agua saborizada</option>
+                        </select>
+                      )}
                     </div>
                   )}
                 </div>
                 <span className="categoria-linea-compra">
-                  {linea.nuevoProducto?.categoria ||
+                  {(linea.nuevoProducto
+                    ? (
+                        { ALI: "Almacén", SNK: "Snack", BEB: "Bebida" } as const
+                      )[linea.nuevoProducto.categoriaCodigo]
+                    : null) ||
                     productoSeleccionado?.categoria ||
                     "—"}
                 </span>
@@ -1663,12 +2088,21 @@ function HistorialCompras({
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
   const [proveedor, setProveedor] = useState("");
+  const [busqueda, setBusqueda] = useState("");
   const [orden, setOrden] = useState<"recientes" | "antiguas">("recientes");
   const [seleccionadaId, setSeleccionadaId] = useState<string | null>(null);
+  const [pagina, setPagina] = useState(1);
   const proveedores = Array.from(
     new Set(compras.map((compra) => compra.proveedor)),
   ).sort();
   const filtradas = compras
+    .filter(
+      (compra) =>
+        !busqueda.trim() ||
+        `${compra.nroFactura} ${compra.proveedor}`
+          .toLowerCase()
+          .includes(busqueda.trim().toLowerCase()),
+    )
     .filter((compra) => !fechaDesde || compra.fechaCompra >= fechaDesde)
     .filter((compra) => !fechaHasta || compra.fechaCompra <= fechaHasta)
     .filter((compra) => !proveedor || compra.proveedor === proveedor)
@@ -1704,7 +2138,14 @@ function HistorialCompras({
           ＋ Nueva compra
         </button>
       </div>
-      <section className="panel filtros-historial-compras">
+      <Filtros
+        categorias={[]}
+        categoria=""
+        onCategoria={() => undefined}
+        onBuscar={setBusqueda}
+        mostrarCategoria={false}
+        placeholder="Buscar número de factura o proveedor..."
+      >
         <label>
           Desde
           <input
@@ -1723,17 +2164,18 @@ function HistorialCompras({
         </label>
         <label>
           Proveedor
-          <select
-            value={proveedor}
-            onChange={(evento) => setProveedor(evento.target.value)}
-          >
-            <option value="">Todos los proveedores</option>
-            {proveedores.map((nombre) => (
-              <option key={nombre} value={nombre}>
-                {nombre}
-              </option>
-            ))}
-          </select>
+          <BuscadorLista
+            opciones={[
+              { valor: "", etiqueta: "Todos los proveedores" },
+              ...proveedores.map((nombre) => ({
+                valor: nombre,
+                etiqueta: nombre,
+              })),
+            ]}
+            valor={proveedor}
+            onCambiar={setProveedor}
+            placeholder="Buscar proveedor..."
+          />
         </label>
         <label>
           Ordenar
@@ -1747,47 +2189,61 @@ function HistorialCompras({
             <option value="antiguas">Más antiguas</option>
           </select>
         </label>
-      </section>
+      </Filtros>
       <div className="tabla-contenedor">
         <table>
           <thead>
             <tr>
               <th>IdFactura</th>
+              <th>N° factura</th>
               <th>Fecha de compra</th>
               <th>Nombre lote creado</th>
               <th>Proveedor</th>
+              <th>Sucursal</th>
               <th>Costo total</th>
               <th />
             </tr>
           </thead>
           <tbody>
-            {filtradas.map((compra) => {
-              const lote =
-                lotes.find((item) => item.facturaCompraId === compra.id)
-                  ?.codigoLote ?? compra.nroFactura;
-              return (
-                <tr key={compra.id}>
-                  <td>
-                    <strong>{compra.nroFactura}</strong>
-                  </td>
-                  <td>{fechaVisible(compra.fechaCompra)}</td>
-                  <td>{lote}</td>
-                  <td>{compra.proveedor}</td>
-                  <td>{dinero(compra.montoTotal)}</td>
-                  <td>
-                    <button
-                      className="enlace"
-                      aria-label={`Ver detalle de ${compra.nroFactura}`}
-                      onClick={() => setSeleccionadaId(compra.id)}
-                    >
-                      Ver detalle
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
+            {filtradas
+              .slice(
+                (pagina - 1) * REGISTROS_POR_PAGINA,
+                pagina * REGISTROS_POR_PAGINA,
+              )
+              .map((compra) => {
+                const lote =
+                  lotes.find((item) => item.facturaCompraId === compra.id)
+                    ?.codigoLote ?? compra.nroFactura;
+                return (
+                  <tr key={compra.id}>
+                    <td>
+                      <strong>{idFacturaVisible(compra.numeroInterno)}</strong>
+                    </td>
+                    <td>{compra.nroFactura}</td>
+                    <td>{fechaVisible(compra.fechaCompra)}</td>
+                    <td>{lote}</td>
+                    <td>{compra.proveedor}</td>
+                    <td>{compra.sucursalProveedor ?? "—"}</td>
+                    <td>{dinero(compra.montoTotal)}</td>
+                    <td>
+                      <button
+                        className="enlace"
+                        aria-label={`Ver detalle de ${compra.nroFactura}`}
+                        onClick={() => setSeleccionadaId(compra.id)}
+                      >
+                        Ver detalle
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
           </tbody>
         </table>
+        <Paginador
+          total={filtradas.length}
+          pagina={pagina}
+          onCambiar={setPagina}
+        />
         {filtradas.length === 0 && (
           <EstadoVacio texto="No hay compras que coincidan con los filtros." />
         )}
@@ -1819,7 +2275,11 @@ function HistorialCompras({
             </h2>
             <div className="resumen-factura">
               <p>
-                <span>Factura</span>
+                <span>IdFactura</span>
+                <strong>{idFacturaVisible(compraSeleccionada.numeroInterno)}</strong>
+              </p>
+              <p>
+                <span>N° factura</span>
                 <strong>{compraSeleccionada.nroFactura}</strong>
               </p>
               <p>
@@ -1829,6 +2289,10 @@ function HistorialCompras({
               <p>
                 <span>Proveedor</span>
                 <strong>{compraSeleccionada.proveedor}</strong>
+              </p>
+              <p>
+                <span>Sucursal</span>
+                <strong>{compraSeleccionada.sucursalProveedor ?? "—"}</strong>
               </p>
               <p>
                 <span>Costo total</span>
